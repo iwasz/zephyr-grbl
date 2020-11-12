@@ -48,10 +48,10 @@
 			label = "Enable the motor driver";
 		};
 
-		// cs {
-		// 	gpios = <&gpiog 7 GPIO_ACTIVE_HIGH>;
-		// 	label = "SPI chip select";
-		// };
+		nss {
+			gpios = <&gpioa 15 GPIO_ACTIVE_HIGH>;
+			label = "SPI chip select";
+		};
 	};
 
 	motor2_pins {
