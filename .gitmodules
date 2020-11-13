@@ -1,0 +1,3 @@
+[submodule "deps/TMC2130Stepper"]
+	path = deps/TMC2130Stepper
+	url = git@github.com:iwasz/TMC2130Stepper.git

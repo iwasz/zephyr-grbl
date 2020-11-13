@@ -1,13 +1,9 @@
-/*
- * Copyright (c) 2016 Intel Corporation
- *
- * SPDX-License-Identifier: Apache-2.0
- */
-
+#include <TMC2130Stepper.h>
 #include <device.h>
 #include <devicetree.h>
 #include <drivers/gpio.h>
 #include <drivers/spi.h>
+#include <sys/byteorder.h>
 #include <zephyr.h>
 
 #define MOTOR1_DIR_NODE DT_PATH (motor1_pins, dir)
@@ -41,18 +37,32 @@
 #define REG_DCCTRL 0x6E
 #define REG_DRVSTATUS 0x6F
 
-int writeCmd (const struct device *spi, const struct spi_config *spi_cfg, uint8_t cmd, uint32_t value)
-{
-        // TODO htons.
-        const struct spi_buf bufs[] = {{.buf = &cmd, .len = 1}, {.buf = &value, .len = 4}};
-        const struct spi_buf_set bufSet = {.buffers = bufs, .count = 2};
-        return spi_write (spi, spi_cfg, &bufSet);
-}
+// namespace container {
+
+// TMC2130Stepper *aa ()
+// {
+
+//         /*--------------------------------------------------------------------------*/
+
+//         // gpio_pin_set (enable, MOTOR1_ENABLE_PIN, true);
+//         return &stepper;
+// }
+
+// } // namespace container
+
+// int writeCmd (const struct device *spi, const struct spi_config *spiCfg, uint8_t cmd, uint32_t value)
+// {
+//         value = sys_cpu_to_be32 (value);
+//         const struct spi_buf bufs[] = {{.buf = &cmd, .len = 1}, {.buf = &value, .len = 4}};
+//         const struct spi_buf_set bufSet = {.buffers = bufs, .count = 2};
+//         return spi_write (spi, spiCfg, &bufSet);
+// }
+
+/****************************************************************************/
 
 void main (void)
 {
         bool stepState = true;
-        int ret;
 
         const struct device *dir = device_get_binding (MOTOR1_DIR_LABEL);
 
@@ -60,7 +70,7 @@ void main (void)
                 return;
         }
 
-        ret = gpio_pin_configure (dir, MOTOR1_DIR_PIN, GPIO_OUTPUT_ACTIVE | MOTOR1_DIR_FLAGS);
+        int ret = gpio_pin_configure (dir, MOTOR1_DIR_PIN, GPIO_OUTPUT_ACTIVE | MOTOR1_DIR_FLAGS);
 
         if (ret < 0) {
                 return;
@@ -115,7 +125,7 @@ void main (void)
 
         /*--------------------------------------------------------------------------*/
 
-        struct spi_config spi_cfg = {0};
+        struct spi_config spiCfg = {0};
         const struct device *spi = device_get_binding (DT_LABEL (DT_NODELABEL (spi2)));
 
         if (!spi) {
@@ -123,22 +133,17 @@ void main (void)
                 return;
         }
 
-        const struct spi_cs_control spiCs = {.gpio_dev = nss, .gpio_pin = MOTOR1_NSS_PIN, .delay = 0, .gpio_dt_flags = GPIO_ACTIVE_LOW};
+        const struct spi_cs_control spiCs = {.gpio_dev = nss, .delay = 0, .gpio_pin = MOTOR1_NSS_PIN, .gpio_dt_flags = GPIO_ACTIVE_LOW};
 
-        spi_cfg.operation = SPI_WORD_SET (8) | SPI_MODE_CPOL | SPI_MODE_CPHA;
-        spi_cfg.frequency = 500000U;
-        spi_cfg.cs = &spiCs;
-
-        int err = writeCmd (spi, &spi_cfg, WRITE_FLAG | REG_GCONF, 0x00000001UL);
-        err |= writeCmd (spi, &spi_cfg, WRITE_FLAG | REG_IHOLD_IRUN, 0x00001010UL);
-        err |= writeCmd (spi, &spi_cfg, WRITE_FLAG | REG_CHOPCONF, 0x08008008UL);
-
-        if (err) {
-                printk ("Error writing to SPI! errro code (%d)\n", err);
-                return;
-        }
+        spiCfg.operation = SPI_WORD_SET (8) | SPI_MODE_CPOL | SPI_MODE_CPHA;
+        spiCfg.frequency = 500000U;
+        spiCfg.cs = &spiCs;
 
         /*--------------------------------------------------------------------------*/
+
+        TMC2130Stepper driver (spi, &spiCfg);
+        driver.rms_current (600);
+        driver.stealthChop (1);
 
         gpio_pin_set (enable, MOTOR1_ENABLE_PIN, true);
 
