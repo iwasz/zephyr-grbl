@@ -33,5 +33,5 @@ spreadCycle is one of chopper algorithms:
   * [x] Może zamiast wkrętów uzyć śrubek 2mm
 
 # SW TODO
-* [ ] Default clock configuration results in 96MHz only, while the CPU is 600MHz capable i think.
+* [ ] Default clock configuration results in 96MHz only, while the CPU is 600MHz capable I think.
 * [ ] 
