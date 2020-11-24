@@ -48,15 +48,79 @@
 #define MOTOR2_NSS_PIN DT_GPIO_PIN (MOTOR2_NSS_NODE, gpios)
 #define MOTOR2_NSS_FLAGS DT_GPIO_FLAGS (MOTOR2_NSS_NODE, gpios)
 
+/*--------------------------------------------------------------------------*/
+
+#define SWITCH_LEFT_NODE DT_PATH (edge_switch_pins, left)
+#define SWITCH_LEFT_LABEL DT_GPIO_LABEL (SWITCH_LEFT_NODE, gpios)
+#define SWITCH_LEFT_PIN DT_GPIO_PIN (SWITCH_LEFT_NODE, gpios)
+#define SWITCH_LEFT_FLAGS DT_GPIO_FLAGS (SWITCH_LEFT_NODE, gpios)
+
+#define SWITCH_RIGHT_NODE DT_PATH (edge_switch_pins, right)
+#define SWITCH_RIGHT_LABEL DT_GPIO_LABEL (SWITCH_RIGHT_NODE, gpios)
+#define SWITCH_RIGHT_PIN DT_GPIO_PIN (SWITCH_RIGHT_NODE, gpios)
+#define SWITCH_RIGHT_FLAGS DT_GPIO_FLAGS (SWITCH_RIGHT_NODE, gpios)
+
+#define SWITCH_TOP_NODE DT_PATH (edge_switch_pins, top)
+#define SWITCH_TOP_LABEL DT_GPIO_LABEL (SWITCH_TOP_NODE, gpios)
+#define SWITCH_TOP_PIN DT_GPIO_PIN (SWITCH_TOP_NODE, gpios)
+#define SWITCH_TOP_FLAGS DT_GPIO_FLAGS (SWITCH_TOP_NODE, gpios)
+
+#define SWITCH_BOTTOM_NODE DT_PATH (edge_switch_pins, bottom)
+#define SWITCH_BOTTOM_LABEL DT_GPIO_LABEL (SWITCH_BOTTOM_NODE, gpios)
+#define SWITCH_BOTTOM_PIN DT_GPIO_PIN (SWITCH_BOTTOM_NODE, gpios)
+#define SWITCH_BOTTOM_FLAGS DT_GPIO_FLAGS (SWITCH_BOTTOM_NODE, gpios)
+
+#define MOTOR1_STALL_NODE DT_PATH (edge_switch_pins, motor1_stall)
+#define MOTOR1_STALL_LABEL DT_GPIO_LABEL (MOTOR1_STALL_NODE, gpios)
+#define MOTOR1_STALL_PIN DT_GPIO_PIN (MOTOR1_STALL_NODE, gpios)
+#define MOTOR1_STALL_FLAGS DT_GPIO_FLAGS (MOTOR1_STALL_NODE, gpios)
+
+#define MOTOR2_STALL_NODE DT_PATH (edge_switch_pins, motor2_stall)
+#define MOTOR2_STALL_LABEL DT_GPIO_LABEL (MOTOR2_STALL_NODE, gpios)
+#define MOTOR2_STALL_PIN DT_GPIO_PIN (MOTOR2_STALL_NODE, gpios)
+#define MOTOR2_STALL_FLAGS DT_GPIO_FLAGS (MOTOR2_STALL_NODE, gpios)
+
 /****************************************************************************/
 
-// #define MOTOR1 1
+const struct device *leftSwitch{};
+const struct device *rightSwitch{};
+const struct device *topSwitch{};
+const struct device *bottomSwitch{};
+const struct device *motor1Stall{};
+const struct device *motor2Stall{};
+
+const struct device *dir1{};
+const struct device *dir2{};
+
+void switchPressed (const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+{
+        // printk ("Switch pressed at %" PRIu32 ", switch : %u\n", k_cycle_get_32 (), pins);
+
+        if (dev == leftSwitch && pins == BIT (SWITCH_LEFT_PIN)) {
+                gpio_pin_set (dir1, MOTOR1_DIR_PIN, false);
+                printk ("L\n");
+        }
+        else if (dev == rightSwitch && pins == BIT (SWITCH_RIGHT_PIN)) {
+                gpio_pin_set (dir1, MOTOR1_DIR_PIN, true);
+                printk ("R\n");
+        }
+        else if (dev == topSwitch && pins == BIT (SWITCH_TOP_PIN)) {
+                gpio_pin_set (dir2, MOTOR2_DIR_PIN, false);
+                printk ("T\n");
+        }
+        else if (dev == bottomSwitch && pins == BIT (SWITCH_BOTTOM_PIN)) {
+                gpio_pin_set (dir2, MOTOR2_DIR_PIN, true);
+                printk ("B\n");
+        }
+}
+
+#define MOTOR1 1
 #define MOTOR2 1
 
 void main (void)
 {
         int ret{};
-        const struct device *spi = device_get_binding (DT_LABEL (DT_NODELABEL (spi2)));
+        const struct device *spi = device_get_binding (DT_LABEL (DT_NODELABEL (spi1)));
 
         if (!spi) {
                 printk ("Could not find SPI driver\n");
@@ -64,7 +128,7 @@ void main (void)
         }
 
 #ifdef MOTOR1
-        const struct device *dir1 = device_get_binding (MOTOR1_DIR_LABEL);
+        dir1 = device_get_binding (MOTOR1_DIR_LABEL);
 
         if (dir1 == NULL) {
                 return;
@@ -119,7 +183,6 @@ void main (void)
         }
 
         gpio_pin_set (enable1, MOTOR1_ENABLE_PIN, false);
-        gpio_pin_set (dir1, MOTOR1_DIR_PIN, false);
 
         const struct spi_cs_control spiCs1 = {.gpio_dev = nss1, .delay = 0, .gpio_pin = MOTOR1_NSS_PIN, .gpio_dt_flags = GPIO_ACTIVE_LOW};
         struct spi_config spiCfg1 = {0};
@@ -142,14 +205,19 @@ void main (void)
         driver1.hysteresis_end (-2);
         driver1.rms_current (800); // mA
         driver1.microsteps (8);
-        // driver1.diag1_stall (1);
-        // driver1.diag1_active_high (1);
-        // driver1.coolstep_min_speed (0xFFFFF); // 20bit max
-        // driver1.THIGH (0);
-        // driver1.semin (5);
-        // driver1.semax (2);
-        // driver1.sedn (0b01);
-        // driver1.sg_stall_value (0);
+
+        driver1.sgt (10);
+        driver1.sfilt (false);
+
+        driver1.diag1_stall (true);
+        driver1.diag1_active_high (true);
+
+        driver1.coolstep_min_speed (0xFFFFF); // 20bit max
+        driver1.THIGH (0);
+        driver1.semin (5);
+        driver1.semax (2);
+        driver1.sedn (0b01);
+        driver1.sg_stall_value (0);
 
         gpio_pin_set (enable1, MOTOR1_ENABLE_PIN, true);
 #endif
@@ -157,7 +225,7 @@ void main (void)
         /****************************************************************************/
 
 #ifdef MOTOR2
-        const struct device *dir2 = device_get_binding (MOTOR2_DIR_LABEL);
+        dir2 = device_get_binding (MOTOR2_DIR_LABEL);
 
         if (dir2 == NULL) {
                 return;
@@ -212,7 +280,6 @@ void main (void)
         }
 
         gpio_pin_set (enable2, MOTOR2_ENABLE_PIN, false);
-        gpio_pin_set (dir2, MOTOR2_DIR_PIN, false);
 
         const struct spi_cs_control spiCs2 = {.gpio_dev = nss2, .delay = 0, .gpio_pin = MOTOR2_NSS_PIN, .gpio_dt_flags = GPIO_ACTIVE_LOW};
         struct spi_config spiCfg2 = {0};
@@ -235,19 +302,175 @@ void main (void)
         driver2.hysteresis_end (-2);
         driver2.rms_current (800); // mA
         driver2.microsteps (8);
-        // driver2.diag1_stall (1);
-        // driver2.diag1_active_high (1);
-        // driver2.coolstep_min_speed (0xFFFFF); // 20bit max
-        // driver2.THIGH (0);
-        // driver2.semin (5);
-        // driver2.semax (2);
-        // driver2.sedn (0b01);
-        // driver2.sg_stall_value (0);
+
+        driver2.diag1_stall (1);
+        driver2.diag1_active_high (1);
+        driver2.coolstep_min_speed (0xFFFFF); // 20bit max
+        driver2.THIGH (0);
+        driver2.semin (5);
+        driver2.semax (2);
+        driver2.sedn (0b01);
+        driver2.sg_stall_value (0);
 
         gpio_pin_set (enable2, MOTOR2_ENABLE_PIN, true);
 #endif
 
+        /*--------------------------------------------------------------------------*/
+
+        leftSwitch = device_get_binding (SWITCH_LEFT_LABEL);
+
+        if (leftSwitch == NULL) {
+                return;
+        }
+
+        ret = gpio_pin_configure (leftSwitch, SWITCH_LEFT_PIN, GPIO_INPUT | SWITCH_LEFT_FLAGS);
+
+        if (ret < 0) {
+                return;
+        }
+
+        ret = gpio_pin_interrupt_configure (leftSwitch, SWITCH_LEFT_PIN, GPIO_INT_EDGE_TO_ACTIVE);
+
+        if (ret != 0) {
+                printk ("Error %d: failed to configure interrupt\n", ret);
+                return;
+        }
+
+        static struct gpio_callback buttonCbDataLeft;
+        gpio_init_callback (&buttonCbDataLeft, switchPressed, BIT (SWITCH_LEFT_PIN));
+        gpio_add_callback (leftSwitch, &buttonCbDataLeft);
+
+        /*--------------------------------------------------------------------------*/
+
+        rightSwitch = device_get_binding (SWITCH_RIGHT_LABEL);
+
+        if (rightSwitch == NULL) {
+                return;
+        }
+
+        ret = gpio_pin_configure (rightSwitch, SWITCH_RIGHT_PIN, GPIO_INPUT | SWITCH_RIGHT_FLAGS);
+
+        if (ret < 0) {
+                return;
+        }
+
+        ret = gpio_pin_interrupt_configure (rightSwitch, SWITCH_RIGHT_PIN, GPIO_INT_EDGE_TO_ACTIVE);
+
+        if (ret != 0) {
+                printk ("Error %d: failed to configure interrupt\n", ret);
+                return;
+        }
+
+        static struct gpio_callback buttonCbDataRight;
+        gpio_init_callback (&buttonCbDataRight, switchPressed, BIT (SWITCH_RIGHT_PIN));
+        gpio_add_callback (rightSwitch, &buttonCbDataRight);
+
+        /*--------------------------------------------------------------------------*/
+
+        topSwitch = device_get_binding (SWITCH_TOP_LABEL);
+
+        if (topSwitch == NULL) {
+                return;
+        }
+
+        ret = gpio_pin_configure (topSwitch, SWITCH_TOP_PIN, GPIO_INPUT | SWITCH_TOP_FLAGS);
+
+        if (ret < 0) {
+                return;
+        }
+
+        ret = gpio_pin_interrupt_configure (topSwitch, SWITCH_TOP_PIN, GPIO_INT_EDGE_TO_ACTIVE);
+
+        if (ret != 0) {
+                printk ("Error %d: failed to configure interrupt\n", ret);
+                return;
+        }
+
+        static struct gpio_callback buttonCbDataTop;
+        gpio_init_callback (&buttonCbDataTop, switchPressed, BIT (SWITCH_TOP_PIN));
+        gpio_add_callback (topSwitch, &buttonCbDataTop);
+
+        /*--------------------------------------------------------------------------*/
+
+        bottomSwitch = device_get_binding (SWITCH_BOTTOM_LABEL);
+
+        if (bottomSwitch == NULL) {
+                return;
+        }
+
+        ret = gpio_pin_configure (bottomSwitch, SWITCH_BOTTOM_PIN, GPIO_INPUT | SWITCH_BOTTOM_FLAGS);
+
+        if (ret < 0) {
+                return;
+        }
+
+        ret = gpio_pin_interrupt_configure (bottomSwitch, SWITCH_BOTTOM_PIN, GPIO_INT_EDGE_TO_ACTIVE);
+
+        if (ret != 0) {
+                printk ("Error %d: failed to configure interrupt\n", ret);
+                return;
+        }
+
+        static struct gpio_callback buttonCbDataBottom;
+        gpio_init_callback (&buttonCbDataBottom, switchPressed, BIT (SWITCH_BOTTOM_PIN));
+        gpio_add_callback (bottomSwitch, &buttonCbDataBottom);
+
+        /*--------------------------------------------------------------------------*/
+
+        motor1Stall = device_get_binding (MOTOR1_STALL_LABEL);
+
+        if (motor1Stall == NULL) {
+                return;
+        }
+
+        ret = gpio_pin_configure (motor1Stall, MOTOR1_STALL_PIN, GPIO_INPUT | MOTOR1_STALL_FLAGS);
+
+        if (ret < 0) {
+                return;
+        }
+
+        ret = gpio_pin_interrupt_configure (motor1Stall, MOTOR1_STALL_PIN, GPIO_INT_EDGE_TO_ACTIVE);
+
+        if (ret != 0) {
+                printk ("Error %d: failed to configure interrupt\n", ret);
+                return;
+        }
+
+        static struct gpio_callback motor1StallCbData;
+        gpio_init_callback (&motor1StallCbData, switchPressed, BIT (MOTOR1_STALL_PIN));
+        gpio_add_callback (motor1Stall, &motor1StallCbData);
+
+        /*--------------------------------------------------------------------------*/
+
+        motor2Stall = device_get_binding (MOTOR2_STALL_LABEL);
+
+        if (motor2Stall == NULL) {
+                return;
+        }
+
+        ret = gpio_pin_configure (motor2Stall, MOTOR2_STALL_PIN, GPIO_INPUT | MOTOR2_STALL_FLAGS);
+
+        if (ret < 0) {
+                return;
+        }
+
+        ret = gpio_pin_interrupt_configure (motor2Stall, MOTOR2_STALL_PIN, GPIO_INT_EDGE_TO_ACTIVE);
+
+        if (ret != 0) {
+                printk ("Error %d: failed to configure interrupt\n", ret);
+                return;
+        }
+
+        static struct gpio_callback motor2StallCbData;
+        gpio_init_callback (&motor2StallCbData, switchPressed, BIT (MOTOR2_STALL_PIN));
+        gpio_add_callback (motor2Stall, &motor2StallCbData);
+
+        /*--------------------------------------------------------------------------*/
+
         bool stepState = true;
+
+        gpio_pin_set (dir1, MOTOR1_DIR_PIN, false);
+        gpio_pin_set (dir2, MOTOR2_DIR_PIN, false);
 
         while (1) {
 #ifdef MOTOR1

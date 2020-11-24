@@ -78,6 +78,40 @@
 		};
 	};
 
+	edge_switch_pins {
+		compatible = "gpio-keys";
+
+		left {// Something wrong with this one
+			gpios = <&gpiof 9 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			label = "Edge switch on the left side (touching the west attachment)";
+		};
+
+		right {
+			gpios = <&gpiof 10 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			label = "Edge switch on the right side (touching the east attachment)";
+		};
+
+		top { 
+			gpios = <&gpiof 8 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			label = "Edge switch on the top (touching the north attachment)";
+		};
+
+		bottom { 
+			gpios = <&gpioa 0 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			label = "Edge switch on the bottom side (touching the pen holder)";
+		};
+
+		motor1_stall {
+			gpios = <&gpiof 7 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			label = "Motor 1 stall diagnostic output. Detects when the motor stalls.";
+		};
+
+		motor2_stall {
+			gpios = <&gpiof 6 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			label = "Motor 2 stall diagnostic output. Detects when the motor stalls.";
+		};
+	};
+
 	gpio_keys {
 		compatible = "gpio-keys";
 		user_button: button {

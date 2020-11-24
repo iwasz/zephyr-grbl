@@ -1,0 +1,83 @@
+/ {
+	motor1_pins {
+		compatible = "gpio-leds";
+
+		dir {
+			gpios = <&gpioa 0 GPIO_ACTIVE_HIGH>;
+			label = "Motor driver direction pin";
+		};
+
+		step {
+			gpios = <&gpioa 1 GPIO_ACTIVE_HIGH>;
+			label = "Motor driver step pin";
+		};
+
+		enable {
+			gpios = <&gpioa 4 GPIO_ACTIVE_LOW>;
+			label = "Enable the motor driver";
+		};
+
+		nss {
+			gpios = <&gpiob 0 GPIO_ACTIVE_HIGH>;
+			label = "SPI chip select";
+		};
+	};
+
+	motor2_pins {
+		compatible = "gpio-leds";
+
+		dir {
+			gpios = <&gpioc 1 GPIO_ACTIVE_HIGH>;
+			label = "Motor driver direction pin";
+		};
+
+		step {
+			gpios = <&gpioc 0 GPIO_ACTIVE_HIGH>;
+			label = "Motor driver step pin";
+		};
+
+		enable {
+			gpios = <&gpiod 3 GPIO_ACTIVE_LOW>;
+			label = "Enable the motor driver";
+		};
+
+		nss {
+			gpios = <&gpiog 2 GPIO_ACTIVE_HIGH>;
+			label = "SPI chip select";
+		};
+	};
+
+	edge_switch_pins {
+		compatible = "gpio-keys";
+
+		left {// Something wrong with this one
+			gpios = <&gpioe 2 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			label = "Edge switch on the left side (touching the west attachment)";
+		};
+
+		right {
+			gpios = <&gpioe 4 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			label = "Edge switch on the right side (touching the east attachment)";
+		};
+
+		top { 
+			gpios = <&gpioe 5 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			label = "Edge switch on the top (touching the north attachment)";
+		};
+
+		bottom { 
+			gpios = <&gpiof 8 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			label = "Edge switch on the bottom side (touching the pen holder)";
+		};
+
+		motor1_stall {
+			gpios = <&gpiof 9 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			label = "Motor 1 stall diagnostic output. Detects when the motor stalls.";
+		};
+
+		motor2_stall {
+			gpios = <&gpiog 1 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			label = "Motor 2 stall diagnostic output. Detects when the motor stalls.";
+		};
+	};
+};
