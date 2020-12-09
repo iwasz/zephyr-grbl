@@ -47,6 +47,30 @@
 		};
 	};
 
+	motorz_pins {
+		compatible = "gpio-leds";
+
+		dir {
+			gpios = <&gpioe 10 GPIO_ACTIVE_HIGH>;
+			label = "Motor driver direction pin";
+		};
+
+		step {
+			gpios = <&gpioe 12 GPIO_ACTIVE_HIGH>;
+			label = "Motor driver step pin";
+		};
+
+		enable {
+			gpios = <&gpioe 14 GPIO_ACTIVE_LOW>;
+			label = "Enable the motor driver";
+		};
+
+		nss {
+			gpios = <&gpioe 15 GPIO_ACTIVE_HIGH>;
+			label = "SPI chip select";
+		};
+	};	
+
 	edge_switch_pins {
 		compatible = "gpio-keys";
 
@@ -93,4 +117,13 @@
 	        label = "SDHC0";
 	        spi-max-frequency = <500000>;
 	};
+};
+
+&timers12 {
+        status = "okay";
+
+        pwm12: pwm {
+                status = "okay";
+				st,prescaler = <10>;
+        };
 };

@@ -3,6 +3,7 @@
 #include <devicetree.h>
 #include <disk/disk_access.h>
 #include <drivers/gpio.h>
+#include <drivers/pwm.h>
 #include <drivers/spi.h>
 #include <ff.h>
 #include <fs/fs.h>
@@ -84,6 +85,16 @@
 #define MOTOR2_STALL_PIN DT_GPIO_PIN (MOTOR2_STALL_NODE, gpios)
 #define MOTOR2_STALL_FLAGS DT_GPIO_FLAGS (MOTOR2_STALL_NODE, gpios)
 
+/*--------------------------------------------------------------------------*/
+
+#define PWM_LED0_NODE DT_ALIAS (pwm_led0)
+
+#if DT_NODE_HAS_STATUS(PWM_LED0_NODE, okay)
+#define PWM_LABEL DT_PWMS_LABEL (PWM_LED0_NODE)
+#define PWM_CHANNEL DT_PWMS_CHANNEL (PWM_LED0_NODE)
+#define PWM_FLAGS DT_PWMS_FLAGS (PWM_LED0_NODE)
+#endif
+
 /****************************************************************************/
 
 const struct device *leftSwitch{};
@@ -94,7 +105,9 @@ const struct device *motor1Stall{};
 const struct device *motor2Stall{};
 
 const struct device *dir1{};
+const struct device *step1{};
 const struct device *dir2{};
+const struct device *step2{};
 
 /****************************************************************************/
 
@@ -181,8 +194,32 @@ static int lsdir (const char *path)
 #define MOTOR1 1
 #define MOTOR2 1
 
+#define PERIOD_USEC 100U
+// #define NUM_STEPS 50U
+// #define STEP_USEC (PERIOD_USEC / NUM_STEPS)
+// #define SLEEP_MSEC 25U
+
+void timer_update_callback ()
+{
+        static bool stepState = true;
+
+#ifdef MOTOR1
+        gpio_pin_set (step1, MOTOR1_STEP_PIN, (int)stepState);
+#endif
+
+#ifdef MOTOR2
+        gpio_pin_set (step2, MOTOR2_STEP_PIN, (int)stepState);
+#endif
+        stepState = !stepState;
+}
+
+// extern "C" int grblMain ();
+
 void main (void)
 {
+
+        // grblMain ();
+
         /* raw disk i/o */
         do {
                 static const char *disk_pdrv = "SD";
@@ -248,7 +285,7 @@ void main (void)
 
         /*--------------------------------------------------------------------------*/
 
-        const struct device *step1 = device_get_binding (MOTOR1_STEP_LABEL);
+        step1 = device_get_binding (MOTOR1_STEP_LABEL);
 
         if (step1 == NULL) {
                 return;
@@ -345,7 +382,7 @@ void main (void)
 
         /*--------------------------------------------------------------------------*/
 
-        const struct device *step2 = device_get_binding (MOTOR2_STEP_LABEL);
+        step2 = device_get_binding (MOTOR2_STEP_LABEL);
 
         if (step2 == NULL) {
                 return;
@@ -573,20 +610,41 @@ void main (void)
 
         /*--------------------------------------------------------------------------*/
 
-        bool stepState = true;
-
         gpio_pin_set (dir1, MOTOR1_DIR_PIN, false);
         gpio_pin_set (dir2, MOTOR2_DIR_PIN, false);
 
-        while (1) {
-#ifdef MOTOR1
-                gpio_pin_set (step1, MOTOR1_STEP_PIN, (int)stepState);
-#endif
+        /*--------------------------------------------------------------------------*/
 
-#ifdef MOTOR2
-                gpio_pin_set (step2, MOTOR2_STEP_PIN, (int)stepState);
-#endif
-                stepState = !stepState;
+        const struct device *pwm;
+        uint32_t pulse_width = 0U;
+
+        pwm = device_get_binding (PWM_LABEL);
+
+        if (!pwm) {
+                printk ("Error: didn't find %s device\n", PWM_LABEL);
+                return;
+        }
+
+        pwm_set_update_callback (pwm, timer_update_callback);
+
+        ret = pwm_pin_set_usec (pwm, PWM_CHANNEL, PERIOD_USEC, pulse_width, PWM_FLAGS);
+
+        if (ret) {
+                printk ("Error %d: failed to set pulse width\n", ret);
+                return;
+        }
+
+        bool stepState{};
+
+        while (1) {
+                // #ifdef MOTOR1
+                //                 gpio_pin_set (step1, MOTOR1_STEP_PIN, (int)stepState);
+                // #endif
+
+                // #ifdef MOTOR2
+                //                 gpio_pin_set (step2, MOTOR2_STEP_PIN, (int)stepState);
+                // #endif
+                //                 stepState = !stepState;
                 k_usleep (100);
         }
 }
