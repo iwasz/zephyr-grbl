@@ -337,3 +337,4 @@ void mcu_peripherals_init ()
                 return;
         }
 }
+

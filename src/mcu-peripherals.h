@@ -145,7 +145,6 @@ extern "C" {
 #endif
 
 void mcu_peripherals_init ();
-void pwm_set_prescaler (); // TODO
 
 #ifdef __cplusplus
 }

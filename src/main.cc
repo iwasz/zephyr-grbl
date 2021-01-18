@@ -19,6 +19,8 @@
 #include <drivers/pwm.h>
 #include <drivers/spi.h>
 
+extern "C" int grblMain ();
+
 /****************************************************************************/
 
 LOG_MODULE_REGISTER (main);
@@ -121,7 +123,6 @@ void main (void)
         mcu_peripherals_init ();
         drv::init ();
 
-        // grblMain ();
 #if 0
         /* raw disk i/o */
         do {
@@ -207,17 +208,20 @@ void main (void)
                 return;
         }
 
+        grblMain ();
+
         // bool stepState{};
 
-        while (1) {
-                // #ifdef MOTOR1
-                //                 gpio_pin_set (stepX, MOTOR1_STEP_PIN, (int)stepState);
-                // #endif
 
-                // #ifdef MOTOR2
-                //                 gpio_pin_set (stepY, MOTOR2_STEP_PIN, (int)stepState);
-                // #endif
-                //                 stepState = !stepState;
-                k_usleep (100);
-        }
+        // while (1) {
+        //         // #ifdef MOTOR1
+        //         //                 gpio_pin_set (stepX, MOTOR1_STEP_PIN, (int)stepState);
+        //         // #endif
+
+        //         // #ifdef MOTOR2
+        //         //                 gpio_pin_set (stepY, MOTOR2_STEP_PIN, (int)stepState);
+        //         // #endif
+        //         //                 stepState = !stepState;
+        //         k_usleep (100);
+        // }
 }
