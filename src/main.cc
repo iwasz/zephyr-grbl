@@ -18,6 +18,7 @@
 #include <drivers/gpio.h>
 #include <drivers/pwm.h>
 #include <drivers/spi.h>
+
 /****************************************************************************/
 
 LOG_MODULE_REGISTER (main);
@@ -44,19 +45,19 @@ void switchPressed (const struct device *dev, struct gpio_callback *cb, uint32_t
         // printk ("Switch pressed at %" PRIu32 ", switch : %u\n", k_cycle_get_32 (), pins);
 
         if (dev == leftSwitch && pins == BIT (SWITCH_LEFT_PIN)) {
-                gpio_pin_set (dir1, MOTOR1_DIR_PIN, false);
+                gpio_pin_set (dirX, MOTORX_DIR_PIN, false);
                 printk ("L\n");
         }
         else if (dev == rightSwitch && pins == BIT (SWITCH_RIGHT_PIN)) {
-                gpio_pin_set (dir1, MOTOR1_DIR_PIN, true);
+                gpio_pin_set (dirX, MOTORX_DIR_PIN, true);
                 printk ("R\n");
         }
         else if (dev == topSwitch && pins == BIT (SWITCH_TOP_PIN)) {
-                gpio_pin_set (dir2, MOTOR2_DIR_PIN, false);
+                gpio_pin_set (dirY, MOTORY_DIR_PIN, false);
                 printk ("T\n");
         }
         else if (dev == bottomSwitch && pins == BIT (SWITCH_BOTTOM_PIN)) {
-                gpio_pin_set (dir2, MOTOR2_DIR_PIN, true);
+                gpio_pin_set (dirY, MOTORY_DIR_PIN, true);
                 printk ("B\n");
         }
 }
@@ -100,7 +101,7 @@ static int lsdir (const char *path)
         return res;
 }
 
-#define PERIOD_USEC 1000U
+#define PERIOD_USEC 500U
 // #define NUM_STEPS 50U
 // #define STEP_USEC (PERIOD_USEC / NUM_STEPS)
 // #define SLEEP_MSEC 25U
@@ -108,14 +109,8 @@ static int lsdir (const char *path)
 void timer_update_callback ()
 {
         static bool stepState = true;
-
-#ifdef MOTOR1
-        gpio_pin_set (step1, MOTOR1_STEP_PIN, (int)stepState);
-#endif
-
-#ifdef MOTOR2
-        gpio_pin_set (step2, MOTOR2_STEP_PIN, (int)stepState);
-#endif
+        gpio_pin_set (stepX, MOTORX_STEP_PIN, (int)stepState);
+        gpio_pin_set (stepY, MOTORY_STEP_PIN, (int)stepState);
         stepState = !stepState;
 }
 
@@ -127,7 +122,7 @@ void main (void)
         drv::init ();
 
         // grblMain ();
-
+#if 0
         /* raw disk i/o */
         do {
                 static const char *disk_pdrv = "SD";
@@ -167,6 +162,8 @@ void main (void)
         else {
                 printk ("Error mounting disk.\n");
         }
+#endif
+
 
         /*--------------------------------------------------------------------------*/
 
@@ -187,17 +184,17 @@ void main (void)
         gpio_add_callback (bottomSwitch, &buttonCbDataBottom);
 
         static struct gpio_callback motor1StallCbData;
-        gpio_init_callback (&motor1StallCbData, switchPressed, BIT (MOTOR1_STALL_PIN));
+        gpio_init_callback (&motor1StallCbData, switchPressed, BIT (MOTORX_STALL_PIN));
         gpio_add_callback (motor1Stall, &motor1StallCbData);
 
         static struct gpio_callback motor2StallCbData;
-        gpio_init_callback (&motor2StallCbData, switchPressed, BIT (MOTOR2_STALL_PIN));
+        gpio_init_callback (&motor2StallCbData, switchPressed, BIT (MOTORY_STALL_PIN));
         gpio_add_callback (motor2Stall, &motor2StallCbData);
 
         /*--------------------------------------------------------------------------*/
 
-        gpio_pin_set (dir1, MOTOR1_DIR_PIN, false);
-        gpio_pin_set (dir2, MOTOR2_DIR_PIN, false);
+        // gpio_pin_set (dirX, MOTOR1_DIR_PIN, false);
+        // gpio_pin_set (dirY, MOTOR2_DIR_PIN, false);
 
         /*--------------------------------------------------------------------------*/
 
@@ -214,11 +211,11 @@ void main (void)
 
         while (1) {
                 // #ifdef MOTOR1
-                //                 gpio_pin_set (step1, MOTOR1_STEP_PIN, (int)stepState);
+                //                 gpio_pin_set (stepX, MOTOR1_STEP_PIN, (int)stepState);
                 // #endif
 
                 // #ifdef MOTOR2
-                //                 gpio_pin_set (step2, MOTOR2_STEP_PIN, (int)stepState);
+                //                 gpio_pin_set (stepY, MOTOR2_STEP_PIN, (int)stepState);
                 // #endif
                 //                 stepState = !stepState;
                 k_usleep (100);

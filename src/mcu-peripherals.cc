@@ -11,7 +11,10 @@
 #include <drivers/gpio.h>
 #include <drivers/pwm.h>
 #include <drivers/spi.h>
+#include <logging/log.h>
 #include <zephyr.h>
+
+LOG_MODULE_REGISTER (mcu_per);
 
 const struct device *leftSwitch{};
 const struct device *rightSwitch{};
@@ -20,15 +23,34 @@ const struct device *bottomSwitch{};
 const struct device *motor1Stall{};
 const struct device *motor2Stall{};
 
-const struct device *dir1{};
-const struct device *step1{};
-const struct device *enable1{};
-const struct device *nss1{};
+const struct device *dirX{};
+const struct device *stepX{};
+const struct device *enableX{};
+const struct device *nssX{};
 
-const struct device *dir2{};
-const struct device *step2{};
-const struct device *enable2{};
-const struct device *nss2{};
+const struct device *dirY{};
+const struct device *stepY{};
+const struct device *enableY{};
+const struct device *nssY{};
+
+const struct device *dirZ{};
+const struct device *stepZ{};
+const struct device *enableZ{};
+const struct device *nssZ{};
+
+#ifdef ENABLE_DUAL_AXIS
+const struct device *dirXdual{};
+const struct device *stepXdual{};
+const struct device *enableXdual{};
+
+const struct device *dirYdual{};
+const struct device *stepYdual{};
+const struct device *enableYdual{};
+
+const struct device *dirZdual{};
+const struct device *stepZdual{};
+const struct device *enableZdual{};
+#endif
 
 const struct device *spi{};
 const struct device *pwm{};
@@ -43,13 +65,13 @@ void mcu_peripherals_init ()
                 return;
         }
 
-        dir1 = device_get_binding (MOTOR1_DIR_LABEL);
+        dirX = device_get_binding (MOTORX_DIR_LABEL);
 
-        if (dir1 == NULL) {
+        if (dirX == NULL) {
                 return;
         }
 
-        ret = gpio_pin_configure (dir1, MOTOR1_DIR_PIN, GPIO_OUTPUT_ACTIVE | MOTOR1_DIR_FLAGS);
+        ret = gpio_pin_configure (dirX, MOTORX_DIR_PIN, GPIO_OUTPUT_ACTIVE | MOTORX_DIR_FLAGS);
 
         if (ret < 0) {
                 return;
@@ -57,13 +79,13 @@ void mcu_peripherals_init ()
 
         /*--------------------------------------------------------------------------*/
 
-        step1 = device_get_binding (MOTOR1_STEP_LABEL);
+        stepX = device_get_binding (MOTORX_STEP_LABEL);
 
-        if (step1 == NULL) {
+        if (stepX == NULL) {
                 return;
         }
 
-        ret = gpio_pin_configure (step1, MOTOR1_STEP_PIN, GPIO_OUTPUT_ACTIVE | MOTOR1_STEP_FLAGS);
+        ret = gpio_pin_configure (stepX, MOTORX_STEP_PIN, GPIO_OUTPUT_ACTIVE | MOTORX_STEP_FLAGS);
 
         if (ret < 0) {
                 return;
@@ -71,13 +93,13 @@ void mcu_peripherals_init ()
 
         /*--------------------------------------------------------------------------*/
 
-        enable1 = device_get_binding (MOTOR1_ENABLE_LABEL);
+        enableX = device_get_binding (MOTORX_ENABLE_LABEL);
 
-        if (enable1 == NULL) {
+        if (enableX == NULL) {
                 return;
         }
 
-        ret = gpio_pin_configure (enable1, MOTOR1_ENABLE_PIN, GPIO_OUTPUT_ACTIVE | MOTOR1_ENABLE_FLAGS);
+        ret = gpio_pin_configure (enableX, MOTORX_ENABLE_PIN, GPIO_OUTPUT_ACTIVE | MOTORX_ENABLE_FLAGS);
 
         if (ret < 0) {
                 return;
@@ -85,43 +107,29 @@ void mcu_peripherals_init ()
 
         /*--------------------------------------------------------------------------*/
 
-        nss1 = device_get_binding (MOTOR1_NSS_LABEL);
+        nssX = device_get_binding (MOTORX_NSS_LABEL);
 
-        if (nss1 == NULL) {
+        if (nssX == NULL) {
                 return;
         }
 
-        ret = gpio_pin_configure (nss1, MOTOR1_NSS_PIN, GPIO_OUTPUT_ACTIVE | MOTOR1_NSS_FLAGS);
+        ret = gpio_pin_configure (nssX, MOTORX_NSS_PIN, GPIO_OUTPUT_ACTIVE | MOTORX_NSS_FLAGS);
 
         if (ret < 0) {
                 return;
         }
 
-        gpio_pin_set (enable1, MOTOR1_ENABLE_PIN, false);
+        gpio_pin_set (enableX, MOTORX_ENABLE_PIN, false);
 
         /*--------------------------------------------------------------------------*/
 
-        dir2 = device_get_binding (MOTOR2_DIR_LABEL);
+        dirY = device_get_binding (MOTORY_DIR_LABEL);
 
-        if (dir2 == NULL) {
+        if (dirY == NULL) {
                 return;
         }
 
-        ret = gpio_pin_configure (dir2, MOTOR2_DIR_PIN, GPIO_OUTPUT_ACTIVE | MOTOR2_DIR_FLAGS);
-
-        if (ret < 0) {
-                return;
-        }
-
-        /*--------------------------------------------------------------------------*/
-
-        step2 = device_get_binding (MOTOR2_STEP_LABEL);
-
-        if (step2 == NULL) {
-                return;
-        }
-
-        ret = gpio_pin_configure (step2, MOTOR2_STEP_PIN, GPIO_OUTPUT_ACTIVE | MOTOR2_STEP_FLAGS);
+        ret = gpio_pin_configure (dirY, MOTORY_DIR_PIN, GPIO_OUTPUT_ACTIVE | MOTORY_DIR_FLAGS);
 
         if (ret < 0) {
                 return;
@@ -129,13 +137,13 @@ void mcu_peripherals_init ()
 
         /*--------------------------------------------------------------------------*/
 
-        enable2 = device_get_binding (MOTOR2_ENABLE_LABEL);
+        stepY = device_get_binding (MOTORY_STEP_LABEL);
 
-        if (enable2 == NULL) {
+        if (stepY == NULL) {
                 return;
         }
 
-        ret = gpio_pin_configure (enable2, MOTOR2_ENABLE_PIN, GPIO_OUTPUT_ACTIVE | MOTOR2_ENABLE_FLAGS);
+        ret = gpio_pin_configure (stepY, MOTORY_STEP_PIN, GPIO_OUTPUT_ACTIVE | MOTORY_STEP_FLAGS);
 
         if (ret < 0) {
                 return;
@@ -143,19 +151,56 @@ void mcu_peripherals_init ()
 
         /*--------------------------------------------------------------------------*/
 
-        nss2 = device_get_binding (MOTOR2_NSS_LABEL);
+        enableY = device_get_binding (MOTORY_ENABLE_LABEL);
 
-        if (nss2 == NULL) {
+        if (enableY == NULL) {
                 return;
         }
 
-        ret = gpio_pin_configure (nss2, MOTOR2_NSS_PIN, GPIO_OUTPUT_ACTIVE | MOTOR2_NSS_FLAGS);
+        ret = gpio_pin_configure (enableY, MOTORY_ENABLE_PIN, GPIO_OUTPUT_ACTIVE | MOTORY_ENABLE_FLAGS);
 
         if (ret < 0) {
                 return;
         }
 
-        gpio_pin_set (enable2, MOTOR2_ENABLE_PIN, false);
+        /*--------------------------------------------------------------------------*/
+
+        nssY = device_get_binding (MOTORY_NSS_LABEL);
+
+        if (nssY == NULL) {
+                return;
+        }
+
+        ret = gpio_pin_configure (nssY, MOTORY_NSS_PIN, GPIO_OUTPUT_ACTIVE | MOTORY_NSS_FLAGS);
+
+        if (ret < 0) {
+                return;
+        }
+
+        gpio_pin_set (enableY, MOTORY_ENABLE_PIN, false);
+
+        /*--------------------------------------------------------------------------*/
+
+        dirZ = device_get_binding (MOTORZ_DIR_LABEL);
+
+        if (dirZ == NULL || gpio_pin_configure (dirZ, MOTORZ_DIR_PIN, GPIO_OUTPUT_ACTIVE | MOTORZ_DIR_FLAGS) < 0) {
+                LOG_ERR ("dirZ pin configuration error");
+                return;
+        }
+
+        stepZ = device_get_binding (MOTORZ_STEP_LABEL);
+
+        if (stepZ == NULL || gpio_pin_configure (stepZ, MOTORZ_STEP_PIN, GPIO_OUTPUT_ACTIVE | MOTORZ_STEP_FLAGS) < 0) {
+                LOG_ERR ("stepZ pin configuration error");
+                return;
+        }
+
+        enableZ = device_get_binding (MOTORZ_ENABLE_LABEL);
+
+        if (enableZ == NULL || gpio_pin_configure (enableZ, MOTORZ_ENABLE_PIN, GPIO_OUTPUT_ACTIVE | MOTORZ_ENABLE_FLAGS) < 0) {
+                LOG_ERR ("enableZ pin configuration error");
+                return;
+        }
 
         /*--------------------------------------------------------------------------*/
 
@@ -243,19 +288,19 @@ void mcu_peripherals_init ()
 
         /*--------------------------------------------------------------------------*/
 
-        motor1Stall = device_get_binding (MOTOR1_STALL_LABEL);
+        motor1Stall = device_get_binding (MOTORX_STALL_LABEL);
 
         if (motor1Stall == NULL) {
                 return;
         }
 
-        ret = gpio_pin_configure (motor1Stall, MOTOR1_STALL_PIN, GPIO_INPUT | MOTOR1_STALL_FLAGS);
+        ret = gpio_pin_configure (motor1Stall, MOTORX_STALL_PIN, GPIO_INPUT | MOTORX_STALL_FLAGS);
 
         if (ret < 0) {
                 return;
         }
 
-        ret = gpio_pin_interrupt_configure (motor1Stall, MOTOR1_STALL_PIN, GPIO_INT_EDGE_TO_ACTIVE);
+        ret = gpio_pin_interrupt_configure (motor1Stall, MOTORX_STALL_PIN, GPIO_INT_EDGE_TO_ACTIVE);
 
         if (ret != 0) {
                 printk ("Error %d: failed to configure interrupt\n", ret);
@@ -264,19 +309,19 @@ void mcu_peripherals_init ()
 
         /*--------------------------------------------------------------------------*/
 
-        motor2Stall = device_get_binding (MOTOR2_STALL_LABEL);
+        motor2Stall = device_get_binding (MOTORY_STALL_LABEL);
 
         if (motor2Stall == NULL) {
                 return;
         }
 
-        ret = gpio_pin_configure (motor2Stall, MOTOR2_STALL_PIN, GPIO_INPUT | MOTOR2_STALL_FLAGS);
+        ret = gpio_pin_configure (motor2Stall, MOTORY_STALL_PIN, GPIO_INPUT | MOTORY_STALL_FLAGS);
 
         if (ret < 0) {
                 return;
         }
 
-        ret = gpio_pin_interrupt_configure (motor2Stall, MOTOR2_STALL_PIN, GPIO_INT_EDGE_TO_ACTIVE);
+        ret = gpio_pin_interrupt_configure (motor2Stall, MOTORY_STALL_PIN, GPIO_INT_EDGE_TO_ACTIVE);
 
         if (ret != 0) {
                 printk ("Error %d: failed to configure interrupt\n", ret);

@@ -14,7 +14,7 @@ namespace drv {
 
 void init ()
 {
-        const struct spi_cs_control spiCs1 = {.gpio_dev = nss1, .delay = 0, .gpio_pin = MOTOR1_NSS_PIN, .gpio_dt_flags = GPIO_ACTIVE_LOW};
+        const struct spi_cs_control spiCs1 = {.gpio_dev = nssX, .delay = 0, .gpio_pin = MOTORX_NSS_PIN, .gpio_dt_flags = GPIO_ACTIVE_LOW};
         struct spi_config spiCfg1 = {0};
 
         spiCfg1.operation = SPI_WORD_SET (8) | SPI_MODE_CPOL | SPI_MODE_CPHA;
@@ -49,9 +49,9 @@ void init ()
         driver1.sedn (0b01);
         driver1.sg_stall_value (0);
 
-        gpio_pin_set (enable1, MOTOR1_ENABLE_PIN, true);
+        gpio_pin_set (enableX, MOTORX_ENABLE_PIN, true);
 
-        const struct spi_cs_control spiCs2 = {.gpio_dev = nss2, .delay = 0, .gpio_pin = MOTOR2_NSS_PIN, .gpio_dt_flags = GPIO_ACTIVE_LOW};
+        const struct spi_cs_control spiCs2 = {.gpio_dev = nssY, .delay = 0, .gpio_pin = MOTORY_NSS_PIN, .gpio_dt_flags = GPIO_ACTIVE_LOW};
         struct spi_config spiCfg2 = {0};
 
         spiCfg2.operation = SPI_WORD_SET (8) | SPI_MODE_CPOL | SPI_MODE_CPHA;
@@ -82,7 +82,7 @@ void init ()
         driver2.sedn (0b01);
         driver2.sg_stall_value (0);
 
-        gpio_pin_set (enable2, MOTOR2_ENABLE_PIN, true);
+        gpio_pin_set (enableY, MOTORY_ENABLE_PIN, true);
 }
 
 } // namespace drv
