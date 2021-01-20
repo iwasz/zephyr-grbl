@@ -37,7 +37,8 @@ spreadCycle is one of chopper algorithms:
 
 # SW TODO
 * [ ] Default clock configuration (H7) results in 96MHz only, while the CPU is 600MHz capable I think.
-* [ ] Baudrate should be configured in dts file, not in the macro.
+* [ ] Baudrate should be configured in dts file, not using a macro.
+* [ ] Refactor serial code to use Zephyr's ring buffers. Send and receive more 
 
 
 # ~~GRBL main modifications~~
@@ -51,6 +52,7 @@ The Bresenham is computed in every TIMER0 tick, then the step pulses are generat
 
 Terminology:
 * probing - this is when a machine tries to sense the material underneath. It slowly lowers the probe (like a metal needle) which upon touching the metal workpiece closes the circuit.
+* jogging - moving the tool manually without any G-code program. There are special controls for this in the UGS.
 
 # What has been done in order to port
 * [x] Zephyr PWM module was modified to accept a timer output compare ISR callback.

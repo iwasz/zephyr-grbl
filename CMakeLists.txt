@@ -54,7 +54,6 @@ target_sources(app PRIVATE
     
     # UART, iunterrupts
     deps/grbl/grbl/serial.c
-    # deps/grbl/grbl/serial.cc
     
     # Undeclared macros and variables.
     deps/grbl/grbl/settings.c
