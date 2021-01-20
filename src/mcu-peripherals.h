@@ -106,7 +106,8 @@
 
 /*--------------------------------------------------------------------------*/
 
-#define PWM_LED0_NODE DT_ALIAS (pwm_led0)
+// #define PWM_LED0_NODE DT_ALIAS (pwm_led0)
+#define PWM_LED0_NODE DT_ALIAS (grblpwm)
 #define PWM_LABEL DT_PWMS_LABEL (PWM_LED0_NODE)
 #define PWM_CHANNEL DT_PWMS_CHANNEL (PWM_LED0_NODE)
 #define PWM_FLAGS DT_PWMS_FLAGS (PWM_LED0_NODE)

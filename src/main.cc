@@ -44,23 +44,21 @@ static const char *disk_mount_pt = "/SD:";
 
 void switchPressed (const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
-        // printk ("Switch pressed at %" PRIu32 ", switch : %u\n", k_cycle_get_32 (), pins);
-
         if (dev == leftSwitch && pins == BIT (SWITCH_LEFT_PIN)) {
                 gpio_pin_set (dirX, MOTORX_DIR_PIN, false);
-                printk ("L\n");
+                LOG_DBG ("L\n");
         }
         else if (dev == rightSwitch && pins == BIT (SWITCH_RIGHT_PIN)) {
                 gpio_pin_set (dirX, MOTORX_DIR_PIN, true);
-                printk ("R\n");
+                LOG_DBG ("R\n");
         }
         else if (dev == topSwitch && pins == BIT (SWITCH_TOP_PIN)) {
                 gpio_pin_set (dirY, MOTORY_DIR_PIN, false);
-                printk ("T\n");
+                LOG_DBG ("T\n");
         }
         else if (dev == bottomSwitch && pins == BIT (SWITCH_BOTTOM_PIN)) {
                 gpio_pin_set (dirY, MOTORY_DIR_PIN, true);
-                printk ("B\n");
+                LOG_DBG ("B\n");
         }
 }
 
@@ -75,11 +73,12 @@ static int lsdir (const char *path)
         /* Verify fs_opendir() */
         res = fs_opendir (&dirp, path);
         if (res) {
-                printk ("Error opening dir %s [%d]\n", path, res);
+                LOG_ERR ("Error opening dir %s [%d]\n", path, res);
                 return res;
         }
 
-        printk ("\nListing dir %s ...\n", path);
+        LOG_INF ("\nListing dir %s ...\n", path);
+
         for (;;) {
                 /* Verify fs_readdir() */
                 res = fs_readdir (&dirp, &entry);
@@ -90,10 +89,10 @@ static int lsdir (const char *path)
                 }
 
                 if (entry.type == FS_DIR_ENTRY_DIR) {
-                        printk ("[DIR ] %s\n", entry.name);
+                        LOG_INF ("[DIR ] %s\n", entry.name);
                 }
                 else {
-                        printk ("[FILE] %s (size = %zu)\n", entry.name, entry.size);
+                        LOG_INF ("[FILE] %s (size = %zu)\n", entry.name, entry.size);
                 }
         }
 
@@ -146,10 +145,10 @@ void main (void)
                         LOG_ERR ("Unable to get sector size");
                         break;
                 }
-                printk ("Sector size %u\n", block_size);
+                LOG_INF ("Sector size %u\n", block_size);
 
                 memory_size_mb = (uint64_t)block_count * block_size;
-                printk ("Memory Size(MB) %u\n", (uint32_t) (memory_size_mb >> 20));
+                LOG_INF ("Memory Size(MB) %u\n", (uint32_t) (memory_size_mb >> 20));
         } while (0);
 
         mp.mnt_point = disk_mount_pt;
@@ -157,11 +156,11 @@ void main (void)
         int res = fs_mount (&mp);
 
         if (res == FR_OK) {
-                printk ("Disk mounted.\n");
+                LOG_INF ("Disk mounted.\n");
                 lsdir (disk_mount_pt);
         }
         else {
-                printk ("Error mounting disk.\n");
+                LOG_ERR ("Error mounting disk.\n");
         }
 #endif
 
@@ -199,14 +198,15 @@ void main (void)
 
         /*--------------------------------------------------------------------------*/
 
-        pwm_set_update_callback (pwm, timer_update_callback);
+        // pwm_set_update_callback (pwm, timer_update_callback);
 
-        int ret = pwm_pin_set_usec (pwm, PWM_CHANNEL, PERIOD_USEC, 0, PWM_FLAGS);
+        // int ret = pwm_pin_set_usec (pwm, PWM_CHANNEL, PERIOD_USEC, 0, PWM_FLAGS);
 
-        if (ret) {
-                printk ("Error %d: failed to set pulse width\n", ret);
-                return;
-        }
+        // if (ret) {
+        //         LOG_ERR ("Error %d: failed to set pulse width\n", ret);
+        //         return;
+        // }
+
 
         grblMain ();
 

@@ -124,6 +124,7 @@
 		led0 = &green_led_1;
 		sw0 = &user_button;
 		kscan0 = &touch_controller;
+		grbluart = &usart3;
 	};
 };
 

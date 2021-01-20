@@ -53,8 +53,8 @@ target_sources(app PRIVATE
     deps/grbl/grbl/report.c
     
     # UART, iunterrupts
-    # deps/grbl/grbl/serial.c
-    deps/grbl/grbl/serial.cc
+    deps/grbl/grbl/serial.c
+    # deps/grbl/grbl/serial.cc
     
     # Undeclared macros and variables.
     deps/grbl/grbl/settings.c

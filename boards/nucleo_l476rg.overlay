@@ -1,7 +1,16 @@
 / {
-        aliases {
-                grbluart = &usart3;
-        };
+	aliases {
+		grbluart = &usart2;
+		grblpwm =  &red_pwm_led;
+	};
+
+	pwmleds {
+		compatible = "pwm-leds";
+
+		red_pwm_led: red_pwm_led {
+			pwms = <&pwm1 1 4 PWM_POLARITY_NORMAL>;
+		};
+	};
 
 	motor1_pins {
 		compatible = "gpio-leds";
@@ -32,22 +41,22 @@
 
 		dir {
 			gpios = <&gpioc 1 GPIO_ACTIVE_HIGH>;
-			label = "Motor driver direction pin";
+			label = "Motor 2 driver direction pin";
 		};
 
 		step {
 			gpios = <&gpioc 0 GPIO_ACTIVE_HIGH>;
-			label = "Motor driver step pin";
+			label = "Motor 2 driver step pin";
 		};
 
 		enable {
 			gpios = <&gpiod 3 GPIO_ACTIVE_LOW>;
-			label = "Enable the motor driver";
+			label = "Enable the motor 2 driver";
 		};
 
 		nss {
 			gpios = <&gpiog 2 GPIO_ACTIVE_HIGH>;
-			label = "SPI chip select";
+			label = "SPI chip select for motor 2";
 		};
 	};
 
@@ -56,24 +65,24 @@
 
 		dir {
 			gpios = <&gpioe 10 GPIO_ACTIVE_HIGH>;
-			label = "Motor driver direction pin";
+			label = "Motor 3 driver direction pin";
 		};
 
 		step {
 			gpios = <&gpioe 12 GPIO_ACTIVE_HIGH>;
-			label = "Motor driver step pin";
+			label = "Motor 3 driver step pin";
 		};
 
 		enable {
 			gpios = <&gpioe 14 GPIO_ACTIVE_LOW>;
-			label = "Enable the motor driver";
+			label = "Enable the motor 3 driver";
 		};
 
 		nss {
 			gpios = <&gpioe 15 GPIO_ACTIVE_HIGH>;
-			label = "SPI chip select";
+			label = "SPI chip select for motor 3";
 		};
-	};	
+	};
 
 	edge_switch_pins {
 		compatible = "gpio-keys";
@@ -88,12 +97,12 @@
 			label = "Edge switch on the right side (touching the east attachment)";
 		};
 
-		top { 
+		top {
 			gpios = <&gpioe 5 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
 			label = "Edge switch on the top (touching the north attachment)";
 		};
 
-		bottom { 
+		bottom {
 			gpios = <&gpiof 8 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
 			label = "Edge switch on the bottom side (touching the pen holder)";
 		};
@@ -110,34 +119,52 @@
 	};
 };
 
+/*
 &spi2 {
 	status = "okay";
 	pinctrl-0 = <&spi2_sck_pb10 &spi2_mosi_pc3 &spi2_miso_pc2 &spi2_nss_pb12>;
 
 	sdhc0: sdhc@0 {
-	        compatible = "zephyr,mmc-spi-slot";
-	        reg = <0>;
-	        status = "okay";
-	        label = "SDHC0";
-	        spi-max-frequency = <500000>;
+		compatible = "zephyr,mmc-spi-slot";
+		reg = <0>;
+		status = "okay";
+		label = "SDHC0";
+		spi-max-frequency = <500000>;
+	};
+};
+ */
+
+&timers1 {
+	status = "okay";
+
+	pwm1: pwm {
+		status = "okay";
+		st,prescaler = <10>;
 	};
 };
 
-&timers12 {
-        status = "okay";
-
-        pwm12: pwm {
-                status = "okay";
-				st,prescaler = <10>;
-        };
-};
-
-&usart3 {
-	dmas = <&dma2 3 3 0x400 0x3
-            &dma2 2 3 0x400 0x3>;
+/*
+ * What does the "<&dma1 7 2 0x440 0x3>" mean? It's a cell (array of 32bit integers) whose fields mean:
+ *
+ * &dma1: reference to dma1
+ * 7: channel number 7
+ * 2: request number 2
+ * 0x440:
+ * (bit 10 is set) : increment memory addres after DMA request
+ * (bits 6-7 == 0b01) : MEM to PERIPH
+ * 0x03: not used. Dummy value.
+ *
+ * Note: even with improper DMA configuration (to some extent: eg. &dma2 instead of &dma1 or wrong channel), the UART2 still worked.
+ * I suspect it felt back to some default polling mode, or even more probably, the initialization failed, but I used the same usart
+ * which is used for logging, so it was already initialized.
+ */
+&usart2 {
+	dmas = <&dma1 7 2 0x440 0x3>,
+		   <&dma1 6 2 0x480 0x3>;
 	dma-names = "tx", "rx";
 };
 
-&dma2 {
+&dma1 {
 	status = "okay";
 };
+
