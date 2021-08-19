@@ -14,6 +14,11 @@ Use ninja or IDE to build. Upload with `west flash` and after this initial uploa
 
 ./
 
+# Topics to mention in a write up
+* Software
+  * Out of tree driver for timer callback.
+  * TMC driver?
+  * GRBL obviously.
 
 # TMC 2130
 spreadCycle is one of chopper algorithms:
@@ -65,3 +70,32 @@ Terminology:
     * [x] ~~Turn DMA on in Kconfig.~~
     * This does not work, as H7 has DMA-V1 + DMAMUX, which is not implemented in Zephyr (this combination). This is my understanding. Therefore I'll try my luck with L476
     * [ ] L476 overlay.
+
+==Compilation, DTS==
+
+
+const int up_irqn = DT_IRQ_BY_IDX(DT_PARENT(DT_DRV_INST(0)), 0, irq);
+		    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+const int up_priority = DT_IRQ_BY_IDX(DT_PARENT(DT_DRV_INST(0)), 0, priority);
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+'DT_N_INST_0_st_stm32_hw_timer_PARENT_IRQ_IDX_0_VAL_irq' undeclared (first use in this function)
+'DT_N_INST_0_st_stm32_hw_timer_PARENT_IRQ_IDX_0_VAL_priority' undeclared (first use in this function)
+
+Nie było w ogóle zdefiniowanego urządzenia w overlay.
+
+-----
+
+'DT_N_S_soc_S_timers_40001800_S_hw_timer' undeclared (first use in this function); did you mean 'DT_N_S_soc_S_timers_40001800_S_hw_timer_ORD'?
+Złe użycie makra DT_DRV_INST(0). Zamiast DT_IRQ_BY_IDX(DT_PARENT(DT_DRV_INST(0)) użyłem (dla testu) samego DT_DRV_INST(0).
+
+-----
+
+'DT_N_S_soc_S_timers_40001800_S_hw_timer_P_st_prescaler' undeclared here (not in a function); did you mean 'DT_N_S_soc_S_timers_40001800_S_pwm_P_st_prescaler'?
+Nie widzi pliku z bindingsami (modules/hw_timer/dts/bindings/hw_timer/st,stm32-hw-timer.yaml w moim przypadku). Kiedy go umieściłem w odpowiednim miejscu to ten problem znikł. Jednak nie wiem jak łatwo sprawdzić czy system widzi moje bindings, czy nie.
+
+==Linking==
+
+undefined reference to `hw_timer_set_update_callback'
+undefined reference to `hw_timer_pin_set_usec'
+
+Nie dodałem pliku nagłowkowego.

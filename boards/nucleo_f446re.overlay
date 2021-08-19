@@ -7,9 +7,9 @@
 	pwmleds {
 		compatible = "pwm-leds";
 
-		// red_pwm_led: red_pwm_led {
-			//     pwms = <&pwm12 1 4 PWM_POLARITY_NORMAL>;
-		// };
+		red_pwm_led: red_pwm_led {
+			pwms = <&hw_timer12 1 4 PWM_POLARITY_NORMAL>;
+		};
 	};
 
 	motor1_pins {
@@ -50,17 +50,17 @@
 		};
 
 		enable {
-			gpios = <&gpiod 3 GPIO_ACTIVE_LOW>;
+			gpios = <&gpioh 0 GPIO_ACTIVE_LOW>;
 			label = "Enable the motor 2 driver";
 		};
 
 		nss {
-			gpios = <&gpiog 2 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpioh 1 GPIO_ACTIVE_HIGH>;
 			label = "SPI chip select for motor 2";
 		};
 	};
 
-	motorz_pins {
+	motorz_pins { // Currently not used
 		compatible = "gpio-leds";
 
 		dir {
@@ -88,32 +88,32 @@
 		compatible = "gpio-keys";
 
 		left {// Something wrong with this one
-			gpios = <&gpioe 2 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			gpios = <&gpiob 7 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
 			label = "Edge switch on the left side (touching the west attachment)";
 		};
 
 		right {
-			gpios = <&gpioe 4 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			gpios = <&gpioa 15 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
 			label = "Edge switch on the right side (touching the east attachment)";
 		};
 
 		top {
-			gpios = <&gpioe 5 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			gpios = <&gpioc 14 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
 			label = "Edge switch on the top (touching the north attachment)";
 		};
 
 		bottom {
-			gpios = <&gpiof 8 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			gpios = <&gpioc 15 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
 			label = "Edge switch on the bottom side (touching the pen holder)";
 		};
 
-		motor1_stall {
-			gpios = <&gpiof 9 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+		motor1_stall { // Currently not used
+			gpios = <&gpioc 10 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
 			label = "Motor 1 stall diagnostic output. Detects when the motor stalls.";
 		};
 
-		motor2_stall {
-			gpios = <&gpiog 1 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+		motor2_stall { // Currently not used
+			gpios = <&gpioc 12 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
 			label = "Motor 2 stall diagnostic output. Detects when the motor stalls.";
 		};
 	};
@@ -132,16 +132,7 @@
 	};
 };
 
-// &timers12 {
-	//     status = "okay";
-
-	//     pwm12: pwm {
-		//         status = "okay";
-		//         st,prescaler = <10>;
-	//     };
-// };
-
-&timers12 {
+&timers2 {
 	status = "okay";
 
 	hw_timer12: hw_timer {

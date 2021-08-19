@@ -6,6 +6,7 @@
  *  ~~~~~~~~~                                                               *
  ****************************************************************************/
 
+#include "hw_timer.h"
 #include "mcu-peripherals.h"
 #include "stepper-drivers.h"
 #include <disk/disk_access.h>
@@ -117,8 +118,27 @@ void timer_update_callback ()
 
 // extern "C" int grblMain ();
 
+const struct device *dev;
+
+// static void user_entry (void *p1, void *p2, void *p3) { hw_timer_print (dev); }
+
 void main (void)
 {
+        // printk ("Hello World from the app!\n");
+
+        // dev = device_get_binding ("CUSTOM_DRIVER");
+
+        // __ASSERT (dev, "Failed to get device binding");
+
+        // printk ("device is %p, name is %s\n", dev, dev->name);
+
+        // k_object_access_grant (dev, k_current_get ());
+        // k_thread_user_mode_enter (user_entry, NULL, NULL, NULL);
+
+        // return;
+
+        /*--------------------------------------------------------------------------*/
+
         mcu_peripherals_init ();
         drv::init ();
 
@@ -164,7 +184,6 @@ void main (void)
         }
 #endif
 
-
         /*--------------------------------------------------------------------------*/
 
         static struct gpio_callback buttonCbDataLeft;
@@ -184,12 +203,12 @@ void main (void)
         gpio_add_callback (bottomSwitch, &buttonCbDataBottom);
 
         static struct gpio_callback motor1StallCbData;
-        gpio_init_callback (&motor1StallCbData, switchPressed, BIT (MOTORX_STALL_PIN));
-        gpio_add_callback (motor1Stall, &motor1StallCbData);
+        // gpio_init_callback (&motor1StallCbData, switchPressed, BIT (MOTORX_STALL_PIN));
+        // gpio_add_callback (motor1Stall, &motor1StallCbData);
 
         static struct gpio_callback motor2StallCbData;
-        gpio_init_callback (&motor2StallCbData, switchPressed, BIT (MOTORY_STALL_PIN));
-        gpio_add_callback (motor2Stall, &motor2StallCbData);
+        // gpio_init_callback (&motor2StallCbData, switchPressed, BIT (MOTORY_STALL_PIN));
+        // gpio_add_callback (motor2Stall, &motor2StallCbData);
 
         /*--------------------------------------------------------------------------*/
 
@@ -207,11 +226,9 @@ void main (void)
         //         return;
         // }
 
-
         grblMain ();
 
         // bool stepState{};
-
 
         // while (1) {
         //         // #ifdef MOTOR1
