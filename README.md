@@ -44,6 +44,11 @@ spreadCycle is one of chopper algorithms:
 * [ ] Default clock configuration (H7) results in 96MHz only, while the CPU is 600MHz capable I think.
 * [ ] Baudrate should be configured in dts file, not using a macro.
 * [ ] Refactor serial code to use Zephyr's ring buffers. Send and receive more 
+* [ ] DMA configuration for usart3 does not work (program faults). I used usart3 as I did in H7, but the realized the usart3 was also used for the console there. In F446 console is attached to usart2. So this mismatch likely caused a problem.
+  * [ ] I would change the grbl uart to usart3, and turn the Zephyr console on on the usart2.
+* [ ] Stall pins configuration does not work (program faults).
+* [x] `k_usleep (100)` results in 200µs delay. But 10ms works fine, so something with resolution.
+
 
 
 # ~~GRBL main modifications~~

@@ -231,14 +231,9 @@ void main (void)
         // bool stepState{};
 
         // while (1) {
-        //         // #ifdef MOTOR1
-        //         //                 gpio_pin_set (stepX, MOTOR1_STEP_PIN, (int)stepState);
-        //         // #endif
-
-        //         // #ifdef MOTOR2
-        //         //                 gpio_pin_set (stepY, MOTOR2_STEP_PIN, (int)stepState);
-        //         // #endif
-        //         //                 stepState = !stepState;
-        //         k_usleep (100);
+        //         gpio_pin_set (stepX, MOTORX_STEP_PIN, (int)stepState);
+        //         gpio_pin_set (stepY, MOTORY_STEP_PIN, (int)stepState);
+        //         stepState = !stepState;
+        //         k_usleep (10000);
         // }
 }

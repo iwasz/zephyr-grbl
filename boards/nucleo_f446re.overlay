@@ -1,6 +1,6 @@
 / {
 	aliases {
-		grbluart = &usart3;
+		grbluart = &usart2;
 		grblpwm =  &red_pwm_led;
 	};
 
@@ -12,7 +12,7 @@
 		};
 	};
 
-	motor1_pins {
+	motor1_pins { // Motor with shorter cable.
 		compatible = "gpio-leds";
 
 		dir {
@@ -25,8 +25,8 @@
 			label = "Motor driver step pin";
 		};
 
-		enable {
-			gpios = <&gpioa 4 GPIO_ACTIVE_LOW>;
+		enable { // High state on CFG6 / EN pin turns off the curents completely. Thus Active low.
+			gpios = <&gpiob 1 GPIO_ACTIVE_LOW>;
 			label = "Enable the motor driver";
 		};
 
@@ -36,7 +36,7 @@
 		};
 	};
 
-	motor2_pins {
+	motor2_pins { // With longer cable.
 		compatible = "gpio-leds";
 
 		dir {
@@ -50,12 +50,12 @@
 		};
 
 		enable {
-			gpios = <&gpioh 0 GPIO_ACTIVE_LOW>;
+			gpios = <&gpioc 8 GPIO_ACTIVE_LOW>;
 			label = "Enable the motor 2 driver";
 		};
 
 		nss {
-			gpios = <&gpioh 1 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpioc 6 GPIO_ACTIVE_HIGH>;
 			label = "SPI chip select for motor 2";
 		};
 	};
@@ -103,7 +103,7 @@
 		};
 
 		bottom {
-			gpios = <&gpioc 15 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			gpios = <&gpioc 11 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
 			label = "Edge switch on the bottom side (touching the pen holder)";
 		};
 
@@ -119,6 +119,7 @@
 	};
 };
 
+// SPI interface for SDIO
 &spi2 {
 	status = "okay";
 	pinctrl-0 = <&spi2_sck_pb10 &spi2_mosi_pc3 &spi2_miso_pc2 &spi2_nss_pb12>;
@@ -145,12 +146,38 @@
 };
 
 
-&usart3 {
-	dmas = <&dma2 3 3 0x400 0x3>,
-		   <&dma2 2 3 0x400 0x3>;
-	dma-names = "tx", "rx";
+// &usart3 {
+	//     // dmas = <&dma2 3 3 0x400 0x3>,
+					 //               //        <&dma2 2 3 0x400 0x3>;
+
+	//     // dma-names = "tx", "rx";
+
+	//     status = "okay";
+	//     pinctrl-0 = <&usart3_rx_pc5 &usart3_tx_pc10>;
+	//     current-speed = <115200>;
+// };
+
+// &dma2 {
+	//     status = "okay";
+// };
+
+&clk_hsi {
+	status = "okay";
 };
 
-&dma2 {
+&pll {
+	div-m = <16>;
+	mul-n = <360>;
+	div-p = <2>;
+	div-q = <2>;
+	clocks = <&clk_hsi>;
 	status = "okay";
+};
+
+&rcc {
+	clocks = <&pll>;
+	clock-frequency = <DT_FREQ_M(180)>;
+	ahb-prescaler = <1>;
+	apb1-prescaler = <4>;
+	apb2-prescaler = <2>;
 };
