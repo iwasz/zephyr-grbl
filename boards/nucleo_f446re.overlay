@@ -5,10 +5,10 @@
 	};
 
 	pwmleds {
-		compatible = "pwm-leds";
+		// compatible = "pwm-leds";
 
 		red_pwm_led: red_pwm_led {
-			pwms = <&hw_timer12 1 4 PWM_POLARITY_NORMAL>;
+			pwms = <&grbl_callback 1 4 PWM_POLARITY_NORMAL>;
 		};
 	};
 
@@ -136,14 +136,20 @@
 &timers2 {
 	status = "okay";
 
-	hw_timer12: hw_timer {
+	/*
+	 * This node is defined as a child of timer node, becuase it references some properties
+	 * of its parent. In this particular case it needs an IRQ number. Look for DT_IRQ_BY_IDX(DT_PARENT (...))
+	 * in the code.
+	 */
+	grbl_callback: hw_timer {
 		compatible = "st,stm32-hw-timer";
 		status = "okay";
 		st,prescaler = <10>;
-		label = "HW_TIMER_12";
+		label = "GRBL_CALLBACK";
 		#pwm-cells = <3>;
 	};
 };
+
 
 
 // &usart3 {

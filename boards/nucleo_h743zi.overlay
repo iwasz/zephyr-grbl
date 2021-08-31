@@ -144,7 +144,7 @@
 &timers12 {
 	status = "okay";
 
-	hw_timer12: hw_timer {
+	grbl_callback: hw_timer {
 		compatible = "st,stm32-hw-timer";
 		status = "okay";
 		st,prescaler = <10>;

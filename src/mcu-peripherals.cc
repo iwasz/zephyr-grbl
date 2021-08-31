@@ -330,11 +330,32 @@ void mcu_peripherals_init ()
 
         /*--------------------------------------------------------------------------*/
 
-        pwm = device_get_binding (PWM_LABEL);
+        if (!DT_NODE_EXISTS (DT_NODELABEL (grbl_callback))) {
+                // Nie istnieje
+        }
 
-        if (!pwm) {
-                printk ("Error: didn't find %s device\n", PWM_LABEL);
+        if (!DT_NODE_HAS_PROP (DT_NODELABEL (grbl_callback), label)) {
+                // Nie ma labela
+        }
+
+        pwm = device_get_binding (DT_PROP (DT_NODELABEL (grbl_callback), label));
+
+        if (pwm == nullptr) {
+                LOG_ERR ("No grbl callback has been found. Check your device tree.");
                 return;
         }
-}
 
+        /*--------------------------------------------------------------------------*/
+
+        // #define PWM_LED0_NODE DT_ALIAS (grblpwm)
+        // #define PWM_LABEL DT_PWMS_LABEL (PWM_LED0_NODE)
+        //  int a = DT_PWMS_CHANNEL (DT_NODELABEL (grbl_callback)));
+        // DT_PWMS_FLAGS (DT_NODELABEL (grbl_callback)))
+
+        // pwm = device_get_binding (PWM_LABEL);
+
+        // if (!pwm) {
+        //         printk ("Error: didn't find %s device\n", PWM_LABEL);
+        //         return;
+        // }
+}

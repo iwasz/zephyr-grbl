@@ -107,10 +107,13 @@
 /*--------------------------------------------------------------------------*/
 
 // #define PWM_LED0_NODE DT_ALIAS (pwm_led0)
-#define PWM_LED0_NODE DT_ALIAS (grblpwm)
-#define PWM_LABEL DT_PWMS_LABEL (PWM_LED0_NODE)
-#define PWM_CHANNEL DT_PWMS_CHANNEL (PWM_LED0_NODE)
-#define PWM_FLAGS DT_PWMS_FLAGS (PWM_LED0_NODE)
+// #define PWM_LED0_NODE DT_ALIAS (grblpwm)
+// #define PWM_LABEL DT_PWMS_LABEL (PWM_LED0_NODE) // PWM_LABEL is designed so it gets the phandle of a device from the "pwms" property.
+// #define PWM_CHANNEL DT_PWMS_CHANNEL (PWM_LED0_NODE)
+// #define PWM_FLAGS DT_PWMS_FLAGS (PWM_LED0_NODE)
+
+#define PWM_CHANNEL 1
+#define PWM_FLAGS HW_TIMER_POLARITY_NORMAL
 
 /****************************************************************************/
 
