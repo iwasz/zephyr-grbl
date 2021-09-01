@@ -10,7 +10,7 @@
 #include "mcu-peripherals.h"
 #include "stepper-drivers.h"
 #include <disk/disk_access.h>
-#include <ff.h>
+// #include <ff.h>
 #include <fs/fs.h>
 #include <logging/log.h>
 #include <sys/byteorder.h>
@@ -28,12 +28,12 @@ LOG_MODULE_REGISTER (main);
 
 static int lsdir (const char *path);
 
-static FATFS fat_fs;
-/* mounting info */
-static struct fs_mount_t mp = {
-        .type = FS_FATFS,
-        .fs_data = &fat_fs,
-};
+// static FATFS fat_fs;
+// /* mounting info */
+// static struct fs_mount_t mp = {
+//         .type = FS_FATFS,
+//         .fs_data = &fat_fs,
+// };
 
 /*
  *  Note the fatfs library is able to mount only strings inside _VOLUME_STRS
