@@ -103,18 +103,18 @@ static int lsdir (const char *path)
         return res;
 }
 
-#define PERIOD_USEC 500U
+// #define PERIOD_USEC 500U
 // #define NUM_STEPS 50U
 // #define STEP_USEC (PERIOD_USEC / NUM_STEPS)
 // #define SLEEP_MSEC 25U
 
-void timer_update_callback ()
-{
-        static bool stepState = true;
-        gpio_pin_set (stepX, MOTORX_STEP_PIN, (int)stepState);
-        gpio_pin_set (stepY, MOTORY_STEP_PIN, (int)stepState);
-        stepState = !stepState;
-}
+// void timer_update_callback ()
+// {
+//         static bool stepState = true;
+//         gpio_pin_set (stepX, MOTORX_STEP_PIN, (int)stepState);
+//         gpio_pin_set (stepY, MOTORY_STEP_PIN, (int)stepState);
+//         stepState = !stepState;
+// }
 
 // extern "C" int grblMain ();
 
@@ -124,22 +124,7 @@ const struct device *dev;
 
 void main (void)
 {
-        // printk ("Hello World from the app!\n");
-
-        // dev = device_get_binding ("CUSTOM_DRIVER");
-
-        // __ASSERT (dev, "Failed to get device binding");
-
-        // printk ("device is %p, name is %s\n", dev, dev->name);
-
-        // k_object_access_grant (dev, k_current_get ());
-        // k_thread_user_mode_enter (user_entry, NULL, NULL, NULL);
-
-        // return;
-
-        /*--------------------------------------------------------------------------*/
-
-        mcu_peripherals_init ();
+        mcuPeripheralsInit ();
         drv::init ();
 
 #if 0

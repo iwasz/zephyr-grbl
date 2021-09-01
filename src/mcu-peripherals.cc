@@ -11,7 +11,9 @@
 #include <drivers/gpio.h>
 #include <drivers/pwm.h>
 #include <drivers/spi.h>
+#include <drivers/uart.h>
 #include <logging/log.h>
+#include <usb/usb_device.h>
 #include <zephyr.h>
 
 LOG_MODULE_REGISTER (mcu_per);
@@ -55,7 +57,9 @@ const struct device *enableZdual{};
 const struct device *spi{};
 const struct device *pwm{};
 
-void mcu_peripherals_init ()
+static void interrupt_handler (const struct device *dev, void *user_data) {}
+
+void mcuPeripheralsInit ()
 {
         int ret{};
         spi = device_get_binding (DT_LABEL (DT_NODELABEL (spi1)));
@@ -358,4 +362,78 @@ void mcu_peripherals_init ()
         //         printk ("Error: didn't find %s device\n", PWM_LABEL);
         //         return;
         // }
+
+        /*--------------------------------------------------------------------------*/
+
+        /*
+         * device_get_binding function gets device by name, while DEVICE_DT_GET_ONE
+         * gets device by its 'compatible' property.
+         */
+        const struct device *dev = DEVICE_DT_GET_ONE (zephyr_cdc_acm_uart);
+
+        if (dev == nullptr) {
+                LOG_ERR ("No zephyr_cdc_acm_uart compatible device");
+        }
+
+        if (!device_is_ready (dev)) {
+                LOG_ERR ("CDC ACM device not ready");
+                return;
+        }
+
+        ret = usb_enable (NULL);
+
+        if (ret != 0) {
+                LOG_ERR ("Failed to enable USB");
+                return;
+        }
+
+        // ring_buf_init (&ringbuf, sizeof (ring_buffer), ring_buffer);
+
+        LOG_INF ("Wait for DTR");
+        uint32_t dtr = 0U;
+
+        while (true) {
+                uart_line_ctrl_get (dev, UART_LINE_CTRL_DTR, &dtr);
+
+                if (dtr) {
+                        break;
+                }
+                else {
+                        /* Give CPU resources to low priority threads. */
+                        k_sleep (K_MSEC (100));
+                }
+        }
+
+        LOG_INF ("DTR set");
+
+        /* They are optional, we use them to test the interrupt endpoint */
+        ret = uart_line_ctrl_set (dev, UART_LINE_CTRL_DCD, 1);
+
+        if (ret) {
+                LOG_WRN ("Failed to set DCD, ret code %d", ret);
+        }
+
+        ret = uart_line_ctrl_set (dev, UART_LINE_CTRL_DSR, 1);
+
+        if (ret) {
+                LOG_WRN ("Failed to set DSR, ret code %d", ret);
+        }
+
+        /* Wait 1 sec for the host to do all settings */
+        k_busy_wait (1000000);
+
+        uint32_t baudrate{};
+        ret = uart_line_ctrl_get (dev, UART_LINE_CTRL_BAUD_RATE, &baudrate);
+
+        if (ret) {
+                LOG_WRN ("Failed to get baudrate, ret code %d", ret);
+        }
+        else {
+                LOG_INF ("Baudrate detected: %d", baudrate);
+        }
+
+        uart_irq_callback_set (dev, interrupt_handler);
+
+        /* Enable rx interrupts */
+        uart_irq_rx_enable (dev);
 }

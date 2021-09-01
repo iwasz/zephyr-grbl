@@ -148,7 +148,7 @@ extern const struct device *pwm;
 extern "C" {
 #endif
 
-void mcu_peripherals_init ();
+void mcuPeripheralsInit ();
 
 #ifdef __cplusplus
 }
