@@ -159,7 +159,7 @@
 	div-m = <16>;
 	mul-n = <336>;
 	div-p = <2>;
-	div-q = <7>;
+	div-q = <7>;  /* 336 / 7 = 48 ! */
 	clocks = <&clk_hsi>;
 	status = "okay";
 };
