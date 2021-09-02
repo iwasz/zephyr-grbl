@@ -1,6 +1,7 @@
 / {
 	aliases {
-		grbluart = &usart2;
+		// USed for communication between GRBL and the host computer.
+		grbluart = &cdc_acm;
 		grblpwm =  &red_pwm_led;
 	};
 
@@ -176,7 +177,7 @@ zephyr_udc0: &usbotg_fs {
 	pinctrl-0 = <&usb_otg_fs_dm_pa11 &usb_otg_fs_dp_pa12>;
 	status = "okay";
 
-	cdc_acm_uart0 {
+	cdc_acm: mcdc_acm_uart0 {
 		compatible = "zephyr,cdc-acm-uart";
 		label = "CDC_ACM_0";
 	};

@@ -57,8 +57,9 @@ const struct device *enableZdual{};
 const struct device *spi{};
 const struct device *pwm{};
 
-static void interrupt_handler (const struct device *dev, void *user_data) {}
-
+/**
+ *
+ */
 void mcuPeripheralsInit ()
 {
         int ret{};
@@ -368,6 +369,9 @@ void mcuPeripheralsInit ()
         /*
          * device_get_binding function gets device by name, while DEVICE_DT_GET_ONE
          * gets device by its 'compatible' property.
+         *
+         * Here I'm only initializing the USB and CDC_ACM, while GRBL refers to the UART
+         * by DTS alias (grbluart). This way GRBL is independent of concrete UART implementation.
          */
         const struct device *dev = DEVICE_DT_GET_ONE (zephyr_cdc_acm_uart);
 
@@ -392,6 +396,7 @@ void mcuPeripheralsInit ()
         LOG_INF ("Wait for DTR");
         uint32_t dtr = 0U;
 
+        // TODO This blocks until somebody connects. Why is that? What is it for?
         while (true) {
                 uart_line_ctrl_get (dev, UART_LINE_CTRL_DTR, &dtr);
 
@@ -404,6 +409,7 @@ void mcuPeripheralsInit ()
                 }
         }
 
+        // TODO I can't see this logs (even LOG_ERR is not printed out on the console).
         LOG_INF ("DTR set");
 
         /* They are optional, we use them to test the interrupt endpoint */
@@ -431,9 +437,4 @@ void mcuPeripheralsInit ()
         else {
                 LOG_INF ("Baudrate detected: %d", baudrate);
         }
-
-        uart_irq_callback_set (dev, interrupt_handler);
-
-        /* Enable rx interrupts */
-        uart_irq_rx_enable (dev);
 }
