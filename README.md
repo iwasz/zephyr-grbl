@@ -47,10 +47,8 @@ Terminology:
 * [x] AVR GPIO registers code ported to zephyr 
 * [x] Gpio inverting functionality stripped down as from now the Zephyr's device tree configuration is used for this.
 * ~~Logging ported to Zephyr.~~ Rolled back.
-* [ ] Port uart code to zephyr.
-  * [ ] Make use of new async uart functionality merged recently to zephyr. [Analogous to this](https://github.com/zephyrproject-rtos/zephyr/pull/30917/commits/a62711bd260fea80948f668d35b05452bd26e95f). 
+* [x] Port uart code to zephyr.
+  * [ ] ~~Make use of new async uart functionality merged recently to zephyr.~~ [Analogous to this](https://github.com/zephyrproject-rtos/zephyr/pull/30917/commits/a62711bd260fea80948f668d35b05452bd26e95f). 
     * [x] ~~Modify the overlay.~~
     * [x] ~~Turn DMA on in Kconfig.~~
-    * This does not work, as H7 has DMA-V1 + DMAMUX, which is not implemented in Zephyr (this combination). This is my understanding. Therefore I'll try my luck with L476
-    * [ ] L476 overlay.
-
+    * [x] Interrupt UART API and Zephyr ring buffers.

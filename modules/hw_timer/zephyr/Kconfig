@@ -1,5 +1,12 @@
-# Copyright (c) 2019 Nordic Semiconductor
+# Copyright (c) 2021 lukasz.iwaszkiewicz@gmail.com
 # SPDX-License-Identifier: Apache-2.0
 
 config HW_TIMER_DRIVER
 	bool "Enable support for the hardware timer with callback driver"
+
+if HW_TIMER_DRIVER
+module = HW_TIMER
+module-str = hw_timer
+
+source "subsys/logging/Kconfig.template.log_config"
+endif

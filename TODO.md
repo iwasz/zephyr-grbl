@@ -20,10 +20,11 @@
   * [x] Może zamiast wkrętów uzyć śrubek 2mm
 
 # Software
-* [ ] Default clock configuration (H7) results in 96MHz only, while the CPU is 600MHz capable I think.
-* [ ] Baudrate should be configured in dts file, not using a macro.
-* [ ] Refactor serial code to use Zephyr's ring buffers. Send and receive more 
-* [ ] DMA configuration for usart3 does not work (program faults). I used usart3 as I did in H7, but the realized the usart3 was also used for the console there. In F446 console is attached to usart2. So this mismatch likely caused a problem.
-  * [ ] I would change the grbl uart to usart3, and turn the Zephyr console on on the usart2.
+* [x] Default clock configuration (H7) results in 96MHz only, while the CPU is 600MHz capable I think. EDIT : Using F4 @ 168MHz
+* [x] Baudrate should be configured in dts file, not using a macro. EDIT : using CDC ACM.
+* [x] Refactor serial code to use Zephyr's ring buffers. Send and receive more.
+* [ ] ~~DMA configuration for usart3 does not work (program faults). I used usart3 as I did in H7, but the realized the usart3 was also used for the console there. In F446 console is attached to usart2. So this mismatch likely caused a problem.~~ EDIT : using interrupt API instead of the Async one.
+  * [ ] ~~I would change the grbl uart to usart3, and turn the Zephyr console on on the usart2.~~ EDIT : using the CDC ACM.
 * [ ] Stall pins configuration does not work (program faults).
 * [x] `k_usleep (100)` results in 200µs delay. But 10ms works fine, so something with resolution.
+* [ ] Refactor (clean up) the hw_timer_driver. Change name to something more descriptive like timer_callback or sth.
