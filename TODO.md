@@ -28,10 +28,9 @@
 * [ ] Stall pins configuration does not work (program faults).
 * [x] `k_usleep (100)` results in 200µs delay. But 10ms works fine, so something with resolution.
 * [ ] Refactor (clean up) the hw_timer_driver. Change name to something more descriptive like timer_callback or sth.
-* [ ] UGS hangs (I mean the transfer stalls) during second upload of the circle.ng file. Fix this. Provide seamless cooperation between the two.
-  * [ ] GRBL hangs in a loop in deps/grbl/grbl/motion_control.c@61 . 
-    * [ ] Jog left, jog right, input the circle program line by line. At some point it'll hang.
-    * [ ] No jog at the beginning, only circle program line by line. Make a mistake along the way (input only a half of a line or something). Continue.
-    * Note : when compiled with -O2 it once again works. WHY!?
-    * [ ] Pause the execution after a hang, and inspect tha main stack. Turn the stack filling with a 0xaa pattern on.
+* [x] UGS hangs (I mean the transfer stalls) during second upload of the circle.ng file. Fix this. Provide seamless cooperation between the two.
+  * [x] GRBL hangs in a loop in deps/grbl/grbl/motion_control.c@61 . 
+    * [x] Jog left, jog right, input the circle program line by line. At some point it'll hang.
+    * [x] No jog at the beginning, only circle program line by line. Make a mistake along the way (input only a half of a line or something). Continue.
+    * Note : when compiled with -O2 it once again works. WHY! It is NOT a stack overflow problem because I have the stack protection turned ON. EDIT : this was all by fault, I removed (I should say : I didn't port this portion from AVR to Zephyr) the IRQ critical section barriers in `system.c` `system_set_exec_state_flag()` (and in other functions there as well).
 * [ ] Resolve all the warnings.

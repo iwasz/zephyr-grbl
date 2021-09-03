@@ -58,4 +58,4 @@ Terminology:
     * [x] ~~Modify the overlay.~~
     * [x] ~~Turn DMA on in Kconfig.~~
     * [x] Interrupt UART API and Zephyr ring buffers.
-* GRBL seems to lack any call to a `delay` function in the main loop. This prevents scheduler from switching to other lower-priority threads which in my case were : `idle`, `logging` and `shell_uart`.
+* GRBL seems to lack any call to a `delay` function in the main loop. This prevents scheduler from switching to other lower-priority threads which in my case were : `idle`, `logging` and `shell_uart`. I've lowered the main thread priority to 14 (from 0) and added k_yeld, so other low priority threads have a chance to run now. This include logging, shell and others.
