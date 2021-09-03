@@ -122,7 +122,7 @@ const struct device *dev;
 
 // static void user_entry (void *p1, void *p2, void *p3) { hw_timer_print (dev); }
 
-void main (void)
+void main ()
 {
         mcuPeripheralsInit ();
         drv::init ();

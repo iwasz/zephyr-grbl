@@ -32,17 +32,23 @@ spreadCycle is one of chopper algorithms:
 * ~~Kernel timers used instead of AVR's `TIMER1` and `TIMER0`.~~
 
 # GRBL
+## My notes / analysis
 The GRBL is cloned from [gnea /grbl as found here](https://github.com/gnea/grbl/wiki).
 
-There are two timers : TIMER1 which works in so-called "normal" mode which simply is an output compare configuration. Its frequency can be changed using OCR1A register. This timer fires an ISR which is the workhorse of the entire setup. It consumes what is called a segment (segments are simply short straight sections of some bigger primitive like arc, circle, or whatever) from a buffer if it does not have one currently, and based on this information it performs Bresenham's line algorithm to figure out which motor to step. TIMER0 is only used to turn off the step pin after some period of time.
+There are two timers used : TIMER1 which works in so-called "normal" mode which simply is an output compare configuration. Its frequency can be changed using OCR1A register. This timer fires an ISR which is the workhorse of the entire setup. It consumes what is called a segment (segments are simply short straight sections of some bigger primitive like arc, circle, or whatever) from a buffer if it does not have one currently, and based on this information it performs Bresenham's line algorithm to figure out which motor to step. TIMER0 is only used to turn off the step pin after some period of time.
 
-The Bresenham is computed in every TIMER0 tick, then the step pulses are generated if needed. Assuming that motor 1 spins at velocity *w*, and motor 2 two times slower, the step pulses for motor 1 would be generated in every ISR call, but only once in every two ISR calls for motor 2. If the movement is slow, then the AMASS thing kicks in, and doubles or quadruples (or more) the Bresenham steps while retaining the motor steps.
+The Bresenham is computed in every TIMER1 tick, then the step pulses are generated if needed. Assuming that motor 1 spins at velocity *w*, and motor 2 two times slower, the step pulses for motor 1 would be generated in every ISR call, but only once in every two ISR calls for motor 2. If the movement is slow, then the AMASS thing kicks in, and doubles or quadruples (or more) the Bresenham steps while retaining the motor steps.
 
 Terminology:
 * probing - this is when a machine tries to sense the material underneath. It slowly lowers the probe (like a metal needle) which upon touching the metal workpiece closes the circuit.
 * jogging - moving the tool manually without any G-code program. There are special controls for this in the UGS.
+* segment
+* block
 
-# What has been done in order to port
+## My complaints about GRBL
+* Tremendous function complexity. For instance `gc_execute_line` has well over 1000 lines of code. 
+
+## What has been done in order to port GRBL
 * [x] Zephyr PWM module was modified to accept a timer output compare ISR callback.
 * [x] AVR GPIO registers code ported to zephyr 
 * [x] Gpio inverting functionality stripped down as from now the Zephyr's device tree configuration is used for this.
@@ -52,3 +58,4 @@ Terminology:
     * [x] ~~Modify the overlay.~~
     * [x] ~~Turn DMA on in Kconfig.~~
     * [x] Interrupt UART API and Zephyr ring buffers.
+* GRBL seems to lack any call to a `delay` function in the main loop. This prevents scheduler from switching to other lower-priority threads which in my case were : `idle`, `logging` and `shell_uart`.
