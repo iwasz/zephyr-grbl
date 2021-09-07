@@ -9,6 +9,8 @@
 * Kareta
   * [ ] Wytłoczenia na łożyska w karecie. Kiedy się ją skręci, łożyska się nie kręca kiedy się skręci mocno karetę.
   * [ ] Problem z kablami. Albo wywalić switche, albo jakoś to poprawić.
+  * [ ] It's almost impossible to stick the belt into place. The slots are to tight!
+  * [ ] PCB for edge switches.
 * Pen holder
   * [x] Body3 łamie się jak się je wsadza. Grubsze od tyłu.
   * [x] Sprężyna ma być montowana na pręcik 1.4 (drut ocynk).
@@ -34,3 +36,5 @@
     * [x] No jog at the beginning, only circle program line by line. Make a mistake along the way (input only a half of a line or something). Continue.
     * Note : when compiled with -O2 it once again works. WHY! It is NOT a stack overflow problem because I have the stack protection turned ON. EDIT : this was all by fault, I removed (I should say : I didn't port this portion from AVR to Zephyr) the IRQ critical section barriers in `system.c` `system_set_exec_state_flag()` (and in other functions there as well).
 * [ ] Resolve all the warnings.
+* [ ] PWM setting in the timer ISR works slow. Why?
+* [ ] 

@@ -140,7 +140,8 @@ extern const struct device *enableZ;
 extern const struct device *nssZ;
 
 extern const struct device *spi;
-extern const struct device *pwm;
+extern const struct device *timerCallbackDevice;
+extern const struct device *zAxisPwm;
 
 /****************************************************************************/
 

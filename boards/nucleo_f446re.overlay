@@ -5,15 +5,15 @@
 		grblpwm =  &red_pwm_led;
 	};
 
-	pwmleds {
-		// compatible = "pwm-leds";
+	pwmleds { // TODO remove this, as this is not used. PWM parametrers are set at run time using pwm_pin_set_usec (pwm, PWM_CHANNEL, PERIOD_USEC, 0, PWM_FLAGS);
+		compatible = "pwm-leds";
 
 		red_pwm_led: red_pwm_led {
 			pwms = <&grbl_callback 1 4 PWM_POLARITY_NORMAL>;
 		};
 	};
 
-	motor1_pins { // Motor with shorter cable.
+	motor1_pins { // Motor with the shorter cable.
 		compatible = "gpio-leds";
 
 		dir {
@@ -37,11 +37,11 @@
 		};
 	};
 
-	motor2_pins { // With longer cable.
+	motor2_pins { // With the longer cable.
 		compatible = "gpio-leds";
 
 		dir {
-			gpios = <&gpioc 1 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpioc 1 GPIO_ACTIVE_LOW>;
 			label = "Motor 2 driver direction pin";
 		};
 
@@ -120,6 +120,10 @@
 	};
 };
 
+&i2c1 {
+	status = "disabled";
+};
+
 // SPI interface for SDIO
 &spi2 {
 	status = "okay";
@@ -148,6 +152,12 @@
 		st,prescaler = <10>;
 		label = "GRBL_CALLBACK";
 		#pwm-cells = <3>;
+	};
+
+	axis_z: pwm {
+		status = "okay";
+		st,prescaler = <10>;
+		pinctrl-0 = <&tim2_ch1_pb8>;
 	};
 };
 

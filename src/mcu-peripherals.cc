@@ -54,8 +54,9 @@ const struct device *stepZdual{};
 const struct device *enableZdual{};
 #endif
 
-const struct device *spi{};
-const struct device *pwm{};
+const device *spi{};
+const device *timerCallbackDevice{};
+const device *zAxisPwm{};
 
 /**
  *
@@ -343,26 +344,28 @@ void mcuPeripheralsInit ()
                 // Nie ma labela
         }
 
-        pwm = device_get_binding (DT_PROP (DT_NODELABEL (grbl_callback), label));
+        timerCallbackDevice = device_get_binding (DT_PROP (DT_NODELABEL (grbl_callback), label));
 
-        if (pwm == nullptr) {
+        if (timerCallbackDevice == nullptr) {
                 LOG_ERR ("No grbl callback has been found. Check your device tree.");
                 return;
         }
 
         /*--------------------------------------------------------------------------*/
 
-        // #define PWM_LED0_NODE DT_ALIAS (grblpwm)
-        // #define PWM_LABEL DT_PWMS_LABEL (PWM_LED0_NODE)
-        //  int a = DT_PWMS_CHANNEL (DT_NODELABEL (grbl_callback)));
-        // DT_PWMS_FLAGS (DT_NODELABEL (grbl_callback)))
+        zAxisPwm = device_get_binding (DT_PROP (DT_NODELABEL (axis_z), label));
 
-        // pwm = device_get_binding (PWM_LABEL);
+        if (!zAxisPwm) {
+                LOG_ERR ("No axis Z PWM device.");
+                return;
+        }
 
-        // if (!pwm) {
-        //         printk ("Error: didn't find %s device\n", PWM_LABEL);
-        //         return;
-        // }
+        ret = pwm_pin_set_usec (zAxisPwm, 1, 20 * 1000, 2000, PWM_POLARITY_NORMAL);
+
+        if (ret) {
+                LOG_ERR ("Error %d: failed to set pulse width\n", ret);
+                return;
+        }
 
         /*--------------------------------------------------------------------------*/
 

@@ -40,10 +40,10 @@ There are two timers used : TIMER1 which works in so-called "normal" mode which 
 The Bresenham is computed in every TIMER1 tick, then the step pulses are generated if needed. Assuming that motor 1 spins at velocity *w*, and motor 2 two times slower, the step pulses for motor 1 would be generated in every ISR call, but only once in every two ISR calls for motor 2. If the movement is slow, then the AMASS thing kicks in, and doubles or quadruples (or more) the Bresenham steps while retaining the motor steps.
 
 Terminology:
-* probing - this is when a machine tries to sense the material underneath. It slowly lowers the probe (like a metal needle) which upon touching the metal workpiece closes the circuit.
-* jogging - moving the tool manually without any G-code program. There are special controls for this in the UGS.
-* segment
-* block
+* **probing** - this is when a machine tries to sense the material underneath. It slowly lowers the probe (like a metal needle) which upon touching the metal workpiece closes the circuit.
+* **jogging** - moving the tool manually without any G-code program. There are special controls for this in the UGS.
+* **block** - this is a planner entity. It has higher level of abstraction than the segment. A block can have many segments.
+* **segment** - a stepper motor (steppr.c) entity (`st_block_t`). This is the most atomic line the motor can "draw" or follow. It has a direction, a number of steps and `step_event_count` which I am uncertain what it is.
 
 ## My complaints about GRBL
 * Tremendous function complexity. For instance `gc_execute_line` has well over 1000 lines of code. 
