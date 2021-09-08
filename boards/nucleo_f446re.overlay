@@ -142,17 +142,17 @@
 	};
 };
 
-&timers2 {
+&timers4 {
 	status = "okay";
 
 	axis_z: pwm {
 		status = "okay";
-		st,prescaler = <10>; // When CPU@168 MHz, timer2 gets 84MHz -> 8.4MHz
-		pinctrl-0 = <&tim2_ch1_pb8>;
+		st,prescaler = <40>; // When CPU@168 MHz, timer2 gets 84MHz. So tim. period is ~31ms. 1/(84MHz/40)*65535
+		pinctrl-0 = <&tim4_ch3_pb8>;
 	};
 };
 
-&timers3 {
+&timers2 {// Timer2 as well as timer5 are 32 bit.
 	status = "okay";
 
 	/*
@@ -163,7 +163,7 @@
 	grbl_callback: hw_timer {
 		compatible = "st,stm32-hw-timer";
 		status = "okay";
-		st,prescaler = <10>;
+		st,prescaler = <10>; // 168MHz -> 84MHz to timer, prescaled by 10 == 8.4MHz. So min period == 1/8.4M, max period == (1/8.4M)*2^32
 		label = "GRBL_CALLBACK";
 		#pwm-cells = <3>;
 	};

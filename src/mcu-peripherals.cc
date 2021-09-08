@@ -360,7 +360,7 @@ void mcuPeripheralsInit ()
                 return;
         }
 
-        ret = pwm_pin_set_usec (zAxisPwm, 1, 20 * 1000, 1500, PWM_POLARITY_NORMAL);
+        ret = pwm_pin_set_usec (zAxisPwm, 3, 20 * 1000, 1500, PWM_POLARITY_NORMAL);
 
         if (ret) {
                 LOG_ERR ("Error %d: failed to set pulse width\n", ret);
