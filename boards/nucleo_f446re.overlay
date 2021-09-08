@@ -147,7 +147,7 @@
 
 	axis_z: pwm {
 		status = "okay";
-		st,prescaler = <10>; // When CPU@168 MHz, time2 gets 84MHz -> 8.4MHz
+		st,prescaler = <10>; // When CPU@168 MHz, timer2 gets 84MHz -> 8.4MHz
 		pinctrl-0 = <&tim2_ch1_pb8>;
 	};
 };
