@@ -50,3 +50,5 @@
 * [ ] **Maybe** join the two GitHub projects (grbl and zephyr-grbl-plotter) into one. Easier for maintenance.
 * [ ] Speeds in `default.h` are probably in wrong units. Default there equals to 10mm per minute. This should result in very slow movement, but in reality the device moves fast.
   * [ ] Feed rate is not working at all as it seems? It is ignored in G commands.
+  * [ ] After resolving the problems with feed rate, when the feedrate sent to the plloter is too low (1-10) the ploter stops.
+  * [ ] `settings.pulse_microseconds` is set, but it is not of any use, because there is no *output compare* callback set. 
