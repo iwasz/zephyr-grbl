@@ -1,9 +1,9 @@
 # Project goals
-* [ ] Port GRBL to Zephyr and make it to work with the UGS on my own hardware. 
+* [ ] Port GRBL to Zephyr and make it work with the UGS on my own hardware. 
 * [ ] Be able to draw complex shapes and as cleanly as [the original AxiDraw](https://www.youtube.com/watch?v=5492ZjivAQ0&t=27s).
-* [ ] Emulate serial port over USB.
-* [ ] Display with menu and whatnot. Like on Prusa printer. 
-* [ ] Implement printing from an SD card.
+* [x] Emulate serial port over USB.
+* [ ] Display a menu and whatnot. Like on Prusa printer. 
+* [ ] Implement printing from a SD card.
 
 # Hardware
 * Kareta
@@ -20,6 +20,8 @@
   * [x] Montowanie servo : nie da się przełożyć kabla (częściowo próbowałem naprawić, ale nie jestem zadowolony).
   * [x] Servo majta się na boki. Slot powinien być dopasowany.
   * [x] Może zamiast wkrętów uzyć śrubek 2mm
+  * [ ] The spring broke off after 30 minutes of work time. Make it thicker, or **redesign**.
+  * [ ] Too much friction on the bearings which are of poor quality. Replace with slide bearnigs? Replace the rods? Redesign from ground up.
 
 # Software
 * [x] Default clock configuration (H7) results in 96MHz only, while the CPU is 600MHz capable I think. EDIT : Using F4 @ 168MHz
@@ -36,5 +38,15 @@
     * [x] No jog at the beginning, only circle program line by line. Make a mistake along the way (input only a half of a line or something). Continue.
     * Note : when compiled with -O2 it once again works. WHY! It is NOT a stack overflow problem because I have the stack protection turned ON. EDIT : this was all by fault, I removed (I should say : I didn't port this portion from AVR to Zephyr) the IRQ critical section barriers in `system.c` `system_set_exec_state_flag()` (and in other functions there as well).
 * [ ] Resolve all the warnings.
-* [ ] PWM setting in the timer ISR works slow. Why?
-* [ ] 
+* [x] PWM setting in the timer ISR works slow. Why? 
+  * ~~Seems like `pwm_pin_set_usec` takes exactly 100µs to execute.~~ 
+  * When run from the main thread `pwm_pin_set_usec` works in no time. ~~I'm starting to think, that my problems were due to misconfigured `DEFAULT_Z_MAX_RATE`. It was way to high, and the FW tried to update the Z axis to frequently.~~
+  * **Something** is causing `pwm_pin_set_usec` to work very slowly when run from an ISR. Updating the TIM2->CCR1 directly works fine.
+  * It was due to misconfiguration. Both servo PWM and the main timer callback were using the same timer and channel.
+* [ ] Now that the PWM and the servo are resolved, another problem occured : Z moves too slowly and the pen leaves gaps (before first segment drawn or after the last - not sure).
+* [ ] I may be wrong but there's something wrong with the scale of the plot when drawn in inches. In mm everything seems to be OK (sphere dia ~146mm).
+* [ ] When compiled with -O0 and ran under GDB, the quality (accuracy) deteriorates drammaticaly. Why is it **so much** of a change?
+* [ ] **Maybe**, just maybe refactor the TMC2130 code to a Zephyr driver.
+* [ ] **Maybe** join the two GitHub projects (grbl and zephyr-grbl-plotter) into one. Easier for maintenance.
+* [ ] Speeds in `default.h` are probably in wrong units. Default there equals to 10mm per minute. This should result in very slow movement, but in reality the device moves fast.
+  * [ ] Feed rate is not working at all as it seems? It is ignored in G commands.
