@@ -1,6 +1,7 @@
 # See also
 * [TODO](TODO.md) list of things to do.
 * [My notes](NOTES.md) on problems I've had. 
+* [Hackaday.io project page](https://hackaday.io/project/177237-corexy-pen-plotter)
 
 # How to build
 ```

@@ -48,7 +48,9 @@
 * [ ] When compiled with -O0 and ran under GDB, the quality (accuracy) deteriorates drammaticaly. Why is it **so much** of a change?
 * [ ] **Maybe**, just maybe refactor the TMC2130 code to a Zephyr driver.
 * [ ] **Maybe** join the two GitHub projects (grbl and zephyr-grbl-plotter) into one. Easier for maintenance.
-* [ ] Speeds in `default.h` are probably in wrong units. Default there equals to 10mm per minute. This should result in very slow movement, but in reality the device moves fast.
-  * [ ] Feed rate is not working at all as it seems? It is ignored in G commands.
-  * [ ] After resolving the problems with feed rate, when the feedrate sent to the plloter is too low (1-10) the ploter stops.
-  * [ ] `settings.pulse_microseconds` is set, but it is not of any use, because there is no *output compare* callback set. 
+* [x] Speeds in `default.h` are probably in wrong units. Default there equals to 10mm per minute. This should result in very slow movement, but in reality the device moves fast.
+  * [x] Feed rate is not working at all as it seems? It is ignored in G commands.
+  * [x] After resolving the problems with feed rate, when the feedrate sent to the plloter is too low (1-10) the ploter stops.
+  * [ ] `settings.pulse_microseconds` is set, but it is not of any use, because there is no *output compare* callback set. It can't even be set right now.
+  * [ ] The plotter is slightly slower than the desired feed rate (~25%).
+  * [ ] When set to very low feed rate, the movement is jerky. For instance when feed rate is 1 mm/min the carret advances a fraction of a mm, and then stops, and repeats. Ticking sound can be heard.
