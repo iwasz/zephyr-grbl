@@ -21,7 +21,9 @@
 
 #ifndef print_h
 #define print_h
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void printString(const char *s);
 
@@ -48,4 +50,7 @@ void printFloat_RateValue(float n);
 // Debug tool to print free memory in bytes at the called point. Not used otherwise.
 void printFreeMemory();
 
+#ifdef __cplusplus
+}
+#endif
 #endif

@@ -20,6 +20,9 @@
 
 #ifndef system_h
 #define system_h
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "grbl.h"
 
@@ -208,5 +211,7 @@ void system_set_exec_accessory_override_flag(uint8_t mask);
 void system_clear_exec_motion_overrides();
 void system_clear_exec_accessory_overrides();
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif

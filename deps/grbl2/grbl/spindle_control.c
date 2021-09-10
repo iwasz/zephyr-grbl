@@ -29,6 +29,7 @@
 
 void spindle_init()
 {
+  /*
   #ifdef VARIABLE_SPINDLE
     // Configure variable spindle PWM and enable pin, if requried. On the Uno, PWM and enable are
     // combined unless configured otherwise.
@@ -49,13 +50,14 @@ void spindle_init()
       SPINDLE_DIRECTION_DDR |= (1<<SPINDLE_DIRECTION_BIT); // Configure as output pin.
     #endif
   #endif
-
+*/
   spindle_stop();
 }
 
 
 uint8_t spindle_get_state()
 {
+  /*
   #ifdef VARIABLE_SPINDLE
     #ifdef USE_SPINDLE_DIR_AS_ENABLE_PIN
       // No spindle direction output pin. 
@@ -88,6 +90,7 @@ uint8_t spindle_get_state()
       #endif
     }
   #endif
+  */
   return(SPINDLE_STATE_DISABLE);
 }
 
@@ -97,6 +100,7 @@ uint8_t spindle_get_state()
 // Called by spindle_init(), spindle_set_speed(), spindle_set_state(), and mc_reset().
 void spindle_stop()
 {
+  /*
   #ifdef VARIABLE_SPINDLE
     SPINDLE_TCCRA_REGISTER &= ~(1<<SPINDLE_COMB_BIT); // Disable PWM. Output voltage is zero.
     #ifdef USE_SPINDLE_DIR_AS_ENABLE_PIN
@@ -113,6 +117,7 @@ void spindle_stop()
       SPINDLE_ENABLE_PORT &= ~(1<<SPINDLE_ENABLE_BIT); // Set pin to low
     #endif
   #endif
+  */
 }
 
 
@@ -228,6 +233,7 @@ void spindle_stop()
   void _spindle_set_state(uint8_t state)
 #endif
 {
+  /*
   if (sys.abort) { return; } // Block during abort.
 
   if (state == SPINDLE_DISABLE) { // Halt or set spindle direction and rpm.
@@ -268,6 +274,7 @@ void spindle_stop()
   }
   
   sys.report_ovr_counter = 0; // Set to report change immediately
+  */
 }
 
 
@@ -283,8 +290,10 @@ void spindle_stop()
 #else
   void _spindle_sync(uint8_t state)
   {
+    /*
     if (sys.state == STATE_CHECK_MODE) { return; }
     protocol_buffer_synchronize(); // Empty planner buffer to ensure spindle is set when programmed.
     _spindle_set_state(state);
+    */
   }
 #endif

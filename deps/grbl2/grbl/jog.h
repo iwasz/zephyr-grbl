@@ -20,6 +20,9 @@
 
 #ifndef jog_h
 #define jog_h
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "gcode.h"
 
@@ -29,4 +32,7 @@
 // Sets up valid jog motion received from g-code parser, checks for soft-limits, and executes the jog.
 uint8_t jog_execute(plan_line_data_t *pl_data, parser_block_t *gc_block);
 
+#ifdef __cplusplus
+}
+#endif
 #endif

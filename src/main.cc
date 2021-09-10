@@ -7,8 +7,8 @@
  ****************************************************************************/
 
 #include "hw_timer.h"
-#include "mcu-peripherals.h"
-#include "stepper-drivers.h"
+#include "stepperDriverSettings.h"
+#include "zephyrGrblPeripherals.h"
 #include <disk/disk_access.h>
 // #include <ff.h>
 #include <fs/fs.h>

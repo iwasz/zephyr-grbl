@@ -36,7 +36,7 @@ volatile uint8_t sys_rt_exec_accessory_override; // Global realtime executor bit
 #endif
 
 
-int main(void)
+int grblMain(void)
 {
   // Initialize system upon power-up.
   serial_init();   // Setup serial baud rate and interrupts
@@ -45,7 +45,7 @@ int main(void)
   system_init();   // Configure pinout pins and pin-change interrupt
 
   memset(sys_position,0,sizeof(sys_position)); // Clear machine position.
-  sei(); // Enable interrupts
+  // sei(); // Enable interrupts
 
   // Initialize system state.
   #ifdef FORCE_INITIALIZATION_ALARM

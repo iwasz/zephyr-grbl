@@ -498,6 +498,7 @@ void protocol_exec_rt_system()
     st_prep_buffer();
   }
 
+        k_yield ();
 }
 
 

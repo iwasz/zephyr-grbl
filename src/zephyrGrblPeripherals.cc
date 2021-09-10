@@ -6,15 +6,7 @@
  *  ~~~~~~~~~                                                               *
  ****************************************************************************/
 
-#include "mcu-peripherals.h"
-#include <devicetree.h>
-#include <drivers/gpio.h>
-#include <drivers/pwm.h>
-#include <drivers/spi.h>
-#include <drivers/uart.h>
-#include <logging/log.h>
-#include <usb/usb_device.h>
-#include <zephyr.h>
+#include "zephyrGrblPeripherals.h"
 
 LOG_MODULE_REGISTER (mcu_per);
 

@@ -21,6 +21,9 @@
 
 #ifndef stepper_h
 #define stepper_h
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifndef SEGMENT_BUFFER_SIZE
   #define SEGMENT_BUFFER_SIZE 6
@@ -56,4 +59,7 @@ void st_update_plan_block_parameters();
 // Called by realtime status reporting if realtime rate reporting is enabled in config.h.
 float st_get_realtime_rate();
 
+#ifdef __cplusplus
+}
+#endif
 #endif

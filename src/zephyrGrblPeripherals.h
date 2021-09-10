@@ -7,7 +7,16 @@
  ****************************************************************************/
 
 #pragma once
+#include "hw_timer.h"
 #include <device.h>
+#include <devicetree.h>
+#include <drivers/gpio.h>
+#include <drivers/pwm.h>
+#include <drivers/spi.h>
+#include <drivers/uart.h>
+#include <logging/log.h>
+#include <usb/usb_device.h>
+#include <zephyr.h>
 
 /*--------------------------------------------------------------------------*/
 

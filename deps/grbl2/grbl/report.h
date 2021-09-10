@@ -19,6 +19,9 @@
 */
 #ifndef report_h
 #define report_h
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // Define Grbl status codes. Valid values (0-255)
 #define STATUS_OK 0
@@ -128,4 +131,7 @@ void report_build_info(char *line);
   void report_realtime_debug();
 #endif
 
+#ifdef __cplusplus
+}
+#endif
 #endif

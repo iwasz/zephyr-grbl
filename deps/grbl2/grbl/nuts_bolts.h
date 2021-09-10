@@ -21,6 +21,9 @@
 
 #ifndef nuts_bolts_h
 #define nuts_bolts_h
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define false 0
 #define true 1
@@ -44,7 +47,10 @@
 // Conversions
 #define MM_PER_INCH (25.40)
 #define INCH_PER_MM (0.0393701)
+// TODO get rid of F_CPU macro
+#define F_CPU 168000000
 #define TICKS_PER_MICROSECOND (F_CPU/1000000)
+#define M_PI 3.14159265358979323846
 
 #define DELAY_MODE_DWELL       0
 #define DELAY_MODE_SYS_SUSPEND 1
@@ -63,6 +69,8 @@
 #define bit_false(x,mask) (x) &= ~(mask)
 #define bit_istrue(x,mask) ((x & mask) != 0)
 #define bit_isfalse(x,mask) ((x & mask) == 0)
+
+#define PSTR(x) x
 
 // Read a floating point value from a string. Line points to the input buffer, char_counter
 // is the indexer pointing to the current character of the line, while float_ptr is
@@ -84,4 +92,7 @@ float hypot_f(float x, float y);
 float convert_delta_vector_to_unit_vector(float *vector);
 float limit_value_by_axis_maximum(float *max_value, float *unit_vec);
 
+#ifdef __cplusplus
+}
+#endif
 #endif

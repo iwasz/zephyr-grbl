@@ -21,6 +21,9 @@
 
 #ifndef settings_h
 #define settings_h
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "grbl.h"
 
@@ -149,5 +152,7 @@ uint8_t get_direction_pin_mask(uint8_t i);
 // Returns the limit pin mask according to Grbl's internal axis numbering
 uint8_t get_limit_pin_mask(uint8_t i);
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif

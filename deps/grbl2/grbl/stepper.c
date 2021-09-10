@@ -21,6 +21,7 @@
 
 #include "grbl.h"
 
+LOG_MODULE_REGISTER (stepper);
 
 // Some useful constants.
 #define DT_SEGMENT (1.0/(ACCELERATION_TICKS_PER_SECOND*60.0)) // min/segment
@@ -47,9 +48,9 @@
 #ifdef ADAPTIVE_MULTI_AXIS_STEP_SMOOTHING
 	#define MAX_AMASS_LEVEL 3
 	// AMASS_LEVEL0: Normal operation. No AMASS. No upper cutoff frequency. Starts at LEVEL1 cutoff frequency.
-	#define AMASS_LEVEL1 (F_CPU/8000) // Over-drives ISR (x2). Defined as F_CPU/(Cutoff frequency in Hz)
-	#define AMASS_LEVEL2 (F_CPU/4000) // Over-drives ISR (x4)
-	#define AMASS_LEVEL3 (F_CPU/2000) // Over-drives ISR (x8)
+#define AMASS_LEVEL1 (1.0F / 8000.0F) // Over-drives ISR (x2). Defined as F_CPU/(Cutoff frequency in Hz)
+#define AMASS_LEVEL2 (1.0F / 4000.0F) // Over-drives ISR (x4)
+#define AMASS_LEVEL3 (1.0F / 2000.0F) // Over-drives ISR (x8)
 
   #if MAX_AMASS_LEVEL <= 0
     error "AMASS must have 1 or more levels to operate correctly."
@@ -82,8 +83,9 @@ static st_block_t st_block_buffer[SEGMENT_BUFFER_SIZE-1];
 // the planner, where the remaining planner block steps still can.
 typedef struct {
   uint16_t n_step;           // Number of step events to be executed for this segment
-  uint16_t cycles_per_tick;  // Step distance traveled per ISR tick, aka step rate.
-  uint8_t  st_block_index;   // Stepper block data index. Uses this information to execute this segment.
+    // uint16_t cycles_per_tick; // Step distance traveled per ISR tick, aka step rate.
+    float periodUs;
+    uint8_t  st_block_index;   // Stepper block data index. Uses this information to execute this segment.
   #ifdef ADAPTIVE_MULTI_AXIS_STEP_SMOOTHING
     uint8_t amass_level;    // Indicates AMASS level for the ISR to execute this segment
   #else
@@ -179,6 +181,20 @@ typedef struct {
 } st_prep_t;
 static st_prep_t prep;
 
+void TIMER1_COMPA_vect ();
+void setServoPositionSteps (int absoluteSteps);
+
+/**
+ * Controls all enable ports. Althgough throughout this source code the term "disable" is
+ * usually used, this function, when given a true value enables ALL the motors. It can be
+ * then clarified in an overlay or dts file if the logic is positive or negative.
+ */
+static void st_enable_motors (bool on)
+{
+        gpio_pin_set (enableX, MOTORX_ENABLE_PIN, on);
+        gpio_pin_set (enableY, MOTORY_ENABLE_PIN, on);
+        gpio_pin_set (enableZ, MOTORZ_ENABLE_PIN, on);
+}
 
 /*    BLOCK VELOCITY PROFILE DEFINITION
           __________________________
@@ -224,8 +240,8 @@ static st_prep_t prep;
 void st_wake_up()
 {
   // Enable stepper drivers.
-  if (bit_istrue(settings.flags,BITFLAG_INVERT_ST_ENABLE)) { STEPPERS_DISABLE_PORT |= (1<<STEPPERS_DISABLE_BIT); }
-  else { STEPPERS_DISABLE_PORT &= ~(1<<STEPPERS_DISABLE_BIT); }
+  if (bit_istrue(settings.flags,BITFLAG_INVERT_ST_ENABLE)) { st_enable_motors (false); }
+  else { st_enable_motors (true); }
 
   // Initialize stepper output bits to ensure first ISR call does not step.
   st.step_outbits = step_port_invert_mask;
@@ -242,7 +258,16 @@ void st_wake_up()
   #endif
 
   // Enable Stepper Driver Interrupt
-  TIMSK1 |= (1<<OCIE1A);
+        // TIMSK1 |= (1 << OCIE1A);
+        hw_timer_set_update_callback (timerCallbackDevice, TIMER1_COMPA_vect);
+
+        // Turn the timer on with whatever period. Only to fire the ISR.
+        int ret = hw_timer_pin_set_usec (timerCallbackDevice, PWM_CHANNEL, 1000, settings.pulse_microseconds, PWM_FLAGS);
+
+        if (ret) {
+                LOG_ERR ("hw_timer_pin_set_usec failed with %d \n", ret);
+                return;
+	}
 }
 
 
@@ -250,12 +275,11 @@ void st_wake_up()
 void st_go_idle()
 {
   // Disable Stepper Driver Interrupt. Allow Stepper Port Reset Interrupt to finish, if active.
-  TIMSK1 &= ~(1<<OCIE1A); // Disable Timer1 interrupt
-  TCCR1B = (TCCR1B & ~((1<<CS12) | (1<<CS11))) | (1<<CS10); // Reset clock to no prescaling.
+  hw_timer_set_update_callback (timerCallbackDevice, NULL);
   busy = false;
 
   // Set stepper driver idle state, disabled or enabled, depending on settings and circumstances.
-  bool pin_state = false; // Keep enabled.
+  bool pin_state = false; // Keep enabled. pin_state == disable motors
   if (((settings.stepper_idle_lock_time != 0xff) || sys_rt_exec_alarm || sys.state == STATE_SLEEP) && sys.state != STATE_HOMING) {
     // Force stepper dwell to lock axes for a defined amount of time to ensure the axes come to a complete
     // stop and not drift from residual inertial forces at the end of the last movement.
@@ -263,8 +287,7 @@ void st_go_idle()
     pin_state = true; // Override. Disable steppers.
   }
   if (bit_istrue(settings.flags,BITFLAG_INVERT_ST_ENABLE)) { pin_state = !pin_state; } // Apply pin invert.
-  if (pin_state) { STEPPERS_DISABLE_PORT |= (1<<STEPPERS_DISABLE_BIT); }
-  else { STEPPERS_DISABLE_PORT &= ~(1<<STEPPERS_DISABLE_BIT); }
+  st_enable_motors (!pin_state);
 }
 
 
@@ -316,12 +339,19 @@ void st_go_idle()
 // TODO: Replace direct updating of the int32 position counters in the ISR somehow. Perhaps use smaller
 // int8 variables and update position counters only when a segment completes. This can get complicated
 // with probing and homing cycles that require true real-time positions.
-ISR(TIMER1_COMPA_vect)
+void TIMER1_COMPA_vect ()
 {
   if (busy) { return; } // The busy-flag is used to avoid reentering this interrupt
 
   // Set the direction pins a couple of nanoseconds before we step the steppers
-  DIRECTION_PORT = (DIRECTION_PORT & ~DIRECTION_MASK) | (st.dir_outbits & DIRECTION_MASK);
+  // DIRECTION_PORT = (DIRECTION_PORT & ~DIRECTION_MASK) | (st.dir_outbits & DIRECTION_MASK);
+
+   gpio_pin_set (dirX, MOTORX_DIR_PIN, st.dir_outbits & (1 << X_DIRECTION_BIT));
+   gpio_pin_set (dirY, MOTORY_DIR_PIN, st.dir_outbits & (1 << Y_DIRECTION_BIT));
+#ifndef USE_SERVO_FOR_Z
+   gpio_pin_set (dirZ, MOTORZ_DIR_PIN, st.dir_outbits & (1 << Z_DIRECTION_BIT));
+#endif
+
   #ifdef ENABLE_DUAL_AXIS
     DIRECTION_PORT_DUAL = (DIRECTION_PORT_DUAL & ~DIRECTION_MASK_DUAL) | (st.dir_outbits_dual & DIRECTION_MASK_DUAL);
   #endif
@@ -333,7 +363,28 @@ ISR(TIMER1_COMPA_vect)
       st.step_bits_dual = (STEP_PORT_DUAL & ~STEP_MASK_DUAL) | st.step_outbits_dual;
     #endif
   #else  // Normal operation
-    STEP_PORT = (STEP_PORT & ~STEP_MASK) | st.step_outbits;
+      // STEP_PORT = (STEP_PORT & ~STEP_MASK) | st.step_outbits;
+
+        if (st.step_outbits & (1 << X_STEP_BIT)) {
+                static bool stepStateX = 0; // Works with DDR where a step is performed on both rising and falling edge.
+                gpio_pin_set (stepX, MOTORX_STEP_PIN, stepStateX);
+                stepStateX = !stepStateX;
+        }
+
+        if (st.step_outbits & (1 << Y_STEP_BIT)) {
+                static bool stepStateY = 0;
+                gpio_pin_set (stepY, MOTORY_STEP_PIN, stepStateY);
+                stepStateY = !stepStateY;
+        }
+
+#ifndef USE_SERVO_FOR_Z
+        if (st.step_outbits & (1 << Z_STEP_BIT)) {
+                static bool stepStateZ = 0;
+                gpio_pin_set (stepZ, MOTORZ_STEP_PIN, stepStateZ);
+                stepStateZ = !stepStateZ;
+        }
+#endif
+
     #ifdef ENABLE_DUAL_AXIS
       STEP_PORT_DUAL = (STEP_PORT_DUAL & ~STEP_MASK_DUAL) | st.step_outbits_dual;
     #endif
@@ -341,11 +392,12 @@ ISR(TIMER1_COMPA_vect)
 
   // Enable step pulse reset timer so that The Stepper Port Reset Interrupt can reset the signal after
   // exactly settings.pulse_microseconds microseconds, independent of the main Timer1 prescaler.
-  TCNT0 = st.step_pulse_time; // Reload Timer0 counter
-  TCCR0B = (1<<CS01); // Begin Timer0. Full speed, 1/8 prescaler
+  // Only single timer here
+  // TCNT0 = st.step_pulse_time; // Reload Timer0 counter
+  // TCCR0B = (1 << CS01);       // Begin Timer0. Full speed, 1/8 prescaler
 
   busy = true;
-  sei(); // Re-enable interrupts to allow Stepper Port Reset Interrupt to fire on-time.
+  // sei(); // Re-enable interrupts to allow Stepper Port Reset Interrupt to fire on-time.
          // NOTE: The remaining code in this ISR will finish before returning to main program.
 
   // If there is no step segment, attempt to pop one from the stepper buffer
@@ -361,7 +413,16 @@ ISR(TIMER1_COMPA_vect)
       #endif
 
       // Initialize step segment timing per step and load number of steps to execute.
-      OCR1A = st.exec_segment->cycles_per_tick;
+      // OCR1A = st.exec_segment->cycles_per_tick;
+
+      int ret = hw_timer_pin_set_usec (timerCallbackDevice, PWM_CHANNEL, st.exec_segment->periodUs,
+                                       settings.pulse_microseconds, PWM_FLAGS);
+
+      if (ret) {
+		LOG_ERR ("Error %d: failed to set pulse width", ret);
+		return;
+      }
+
       st.step_count = st.exec_segment->n_step; // NOTE: Can sometimes be zero when moving slow.
       // If the new segment starts a new planner block, initialize stepper variables and counters.
       // NOTE: When the segment data index changes, this indicates a new planner block.
@@ -452,6 +513,15 @@ ISR(TIMER1_COMPA_vect)
     else { sys_position[Z_AXIS]++; }
   }
 
+#ifdef USE_SERVO_FOR_Z
+    static int32_t lastSysPositionZ = 0;
+
+    if (sys_position[Z_AXIS] != lastSysPositionZ) {
+      lastSysPositionZ = sys_position[Z_AXIS];
+      setServoPositionSteps (lastSysPositionZ);
+    }
+#endif
+
   // During a homing cycle, lock out and prevent desired axes from moving.
   if (sys.state == STATE_HOMING) { 
     st.step_outbits &= sys.homing_axis_lock;
@@ -486,6 +556,7 @@ ISR(TIMER1_COMPA_vect)
 // This interrupt is enabled by ISR_TIMER1_COMPAREA when it sets the motor port bits to execute
 // a step. This ISR resets the motor port after a short period (settings.pulse_microseconds)
 // completing one step cycle.
+/*
 ISR(TIMER0_OVF_vect)
 {
   // Reset stepping pins (leave the direction pins)
@@ -495,6 +566,7 @@ ISR(TIMER0_OVF_vect)
   #endif
   TCCR0B = 0; // Disable Timer0 to prevent re-entering this interrupt when it's not needed.
 }
+*/
 #ifdef STEP_PULSE_DELAY
   // This interrupt is used only when STEP_PULSE_DELAY is enabled. Here, the step pulse is
   // initiated after the STEP_PULSE_DELAY time period has elapsed. The ISR TIMER2_OVF interrupt
@@ -551,8 +623,16 @@ void st_reset()
   st.dir_outbits = dir_port_invert_mask; // Initialize direction bits to default.
 
   // Initialize step and direction port pins.
-  STEP_PORT = (STEP_PORT & ~STEP_MASK) | step_port_invert_mask;
-  DIRECTION_PORT = (DIRECTION_PORT & ~DIRECTION_MASK) | dir_port_invert_mask;
+  // STEP_PORT = (STEP_PORT & ~STEP_MASK) | step_port_invert_mask;
+  // DIRECTION_PORT = (DIRECTION_PORT & ~DIRECTION_MASK) | dir_port_invert_mask;
+
+  gpio_pin_set (stepX, MOTORX_STEP_PIN, bit_istrue(settings.step_invert_mask,bit(0)));
+  gpio_pin_set (stepY, MOTORY_STEP_PIN, bit_istrue(settings.step_invert_mask,bit(1)));
+  gpio_pin_set (stepZ, MOTORZ_STEP_PIN, bit_istrue(settings.step_invert_mask,bit(2)));
+
+  gpio_pin_set (dirX, MOTORX_DIR_PIN, bit_istrue(settings.dir_invert_mask,bit(0)));
+  gpio_pin_set (dirY, MOTORY_DIR_PIN, bit_istrue(settings.dir_invert_mask,bit(1)));
+  gpio_pin_set (dirZ, MOTORZ_DIR_PIN, bit_istrue(settings.dir_invert_mask,bit(2)));
   
   #ifdef ENABLE_DUAL_AXIS
     st.dir_outbits_dual = dir_port_invert_mask_dual;
@@ -565,6 +645,7 @@ void st_reset()
 // Initialize and start the stepper motor subsystem
 void stepper_init()
 {
+/*
   // Configure step and direction interface pins
   STEP_DDR |= STEP_MASK;
   STEPPERS_DISABLE_DDR |= 1<<STEPPERS_DISABLE_BIT;
@@ -591,6 +672,7 @@ void stepper_init()
   #ifdef STEP_PULSE_DELAY
     TIMSK0 |= (1<<OCIE0A); // Enable Timer0 Compare Match A interrupt
   #endif
+*/
 }
 
 
@@ -1013,21 +1095,40 @@ void st_prep_buffer()
     float inv_rate = dt/(last_n_steps_remaining - step_dist_remaining); // Compute adjusted step rate inverse
 
     // Compute CPU cycles per step for the prepped segment.
-    uint32_t cycles = ceil( (TICKS_PER_MICROSECOND*1000000*60)*inv_rate ); // (cycles/step)
+    // uint32_t cycles = ceil( (TICKS_PER_MICROSECOND*1000000*60)*inv_rate ); // (cycles/step)
 
+    float periodUs = 1000000 * 60 * inv_rate;
     #ifdef ADAPTIVE_MULTI_AXIS_STEP_SMOOTHING
       // Compute step timing and multi-axis smoothing level.
       // NOTE: AMASS overdrives the timer with each level, so only one prescalar is required.
-      if (cycles < AMASS_LEVEL1) { prep_segment->amass_level = 0; }
-      else {
-        if (cycles < AMASS_LEVEL2) { prep_segment->amass_level = 1; }
-        else if (cycles < AMASS_LEVEL3) { prep_segment->amass_level = 2; }
-        else { prep_segment->amass_level = 3; }
-        cycles >>= prep_segment->amass_level;
+                if (periodUs < AMASS_LEVEL1) { // < 21000
+                        prep_segment->amass_level = 0;
+                }
+                else {
+                        if (periodUs < AMASS_LEVEL2) { // < 42000
+                                prep_segment->amass_level = 1;
+                                periodUs /= 2.0;
+                        }
+                        else if (periodUs < AMASS_LEVEL3) { // < 84000
+                                prep_segment->amass_level = 2;
+                                periodUs /= 4.0;
+                        }
+                        else {
+                                prep_segment->amass_level = 3;
+                                periodUs /= 8.0;
+                        }
+                        // cycles >>= prep_segment->amass_level;
         prep_segment->n_step <<= prep_segment->amass_level;
       }
-      if (cycles < (1UL << 16)) { prep_segment->cycles_per_tick = cycles; } // < 65536 (4.1ms @ 16MHz)
-      else { prep_segment->cycles_per_tick = 0xffff; } // Just set the slowest speed possible.
+
+                // if (cycles < (1UL << 16)) {
+                // prep_segment->cycles_per_tick = cycles;
+                prep_segment->periodUs = periodUs;
+                //} // < 65536 (4.1ms @ 16MHz)
+                // else {
+                //         prep_segment->cycles_per_tick = 0xffff;
+                //         prep_segment->periodUs = 10000; // 1 step = 10 ms
+                // }                                       // Just set the slowest speed possible.
     #else
       // Compute step timing and timer prescalar for normal step generation.
       if (cycles < (1UL << 16)) { // < 65536  (4.1ms @ 16MHz)
@@ -1092,4 +1193,33 @@ float st_get_realtime_rate()
     return prep.current_speed;
   }
   return 0.0f;
+}
+
+/**
+ * This sets the Z position of my machine which uses a simple servo for that purpose. GRBL
+ * thinks in stepper-motor steps, and so steps has to converted to something understandable
+ * by the servo.
+ *
+ * absoluteSteps == 0 means all the way down (0 mm). This corresponds Pulse 1000µs
+ * absoluteSteps == ~??? means all the way up (~6 mm). This corresponds Pulse 2000µs
+ */
+void setServoPositionSteps (int absoluteSteps)
+{
+        // I'm assuming here, that a servo accepts pulses from 1000µs to 2000µs. This is where the 1000.0 factor comes from.
+        float pulseUs = 1000.0F * (((float)absoluteSteps) / ((float)(DEFAULT_Z_STEPS_PER_MM))) / MAX_Z_REACH_MM + 1000.0F;
+
+        // But I noticed, that some servos can accept a little bit shorter and longer pulses as well.
+        if (pulseUs > SERVO_PULSE_MAX) {
+                pulseUs = SERVO_PULSE_MAX;
+        }
+        if (pulseUs < SERVO_PULSE_MIN) {
+                pulseUs = SERVO_PULSE_MIN;
+        }
+
+        int ret = pwm_pin_set_usec (zAxisPwm, 3, 20 * 1000, pulseUs, PWM_POLARITY_NORMAL);
+
+        if (ret) {
+                LOG_ERR ("Error %d: failed to set pulse width\n", ret);
+                return;
+        }
 }

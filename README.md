@@ -50,9 +50,14 @@ Terminology:
 * Tremendous function complexity. For instance `gc_execute_line` has well over 1000 lines of code. 
 
 ## What has been done in order to port GRBL
+* Added a new macro for my machine named DEFAULTS_ZEPHYR_GRBL_PLOTTER in the `config.h` and globally in the `CMakeLists.txt`. Used mostly in the `defaults.h`
+* Coolant control, spindle **comented out**.
+* Added `extern "C" {` to most of the `*.h` files to enable C++ interoperability.
+* Added definitions for my machine in the `defaults.h`. 
+* Eeprom support reimplemented.
 * [x] Zephyr PWM module was modified to accept a timer output compare ISR callback.
 * [x] AVR GPIO registers code ported to zephyr 
-* [x] Gpio inverting functionality stripped down as from now the Zephyr's device tree configuration is used for this.
+* [x] ~~Gpio inverting functionality stripped down as from now the Zephyr's device tree configuration is used for this.~~
 * ~~Logging ported to Zephyr.~~ Rolled back.
 * [x] Port uart code to zephyr.
   * [ ] ~~Make use of new async uart functionality merged recently to zephyr.~~ [Analogous to this](https://github.com/zephyrproject-rtos/zephyr/pull/30917/commits/a62711bd260fea80948f668d35b05452bd26e95f). 

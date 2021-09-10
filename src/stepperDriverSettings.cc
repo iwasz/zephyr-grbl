@@ -6,8 +6,8 @@
  *  ~~~~~~~~~                                                               *
  ****************************************************************************/
 
-#include "stepper-drivers.h"
-#include "mcu-peripherals.h"
+#include "stepperDriverSettings.h"
+#include "zephyrGrblPeripherals.h"
 #include <TMC2130Stepper.h>
 
 namespace drv {

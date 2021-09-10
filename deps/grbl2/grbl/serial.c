@@ -20,89 +20,67 @@
 */
 
 #include "grbl.h"
+#include <drivers/uart.h>
+#include <logging/log.h>
+#include <sys/ring_buffer.h>
 
-#define RX_RING_BUFFER (RX_BUFFER_SIZE+1)
-#define TX_RING_BUFFER (TX_BUFFER_SIZE+1)
+LOG_MODULE_REGISTER (serial);
 
-uint8_t serial_rx_buffer[RX_RING_BUFFER];
-uint8_t serial_rx_buffer_head = 0;
-volatile uint8_t serial_rx_buffer_tail = 0;
+const struct device *uart = NULL;
 
-uint8_t serial_tx_buffer[TX_RING_BUFFER];
-uint8_t serial_tx_buffer_head = 0;
-volatile uint8_t serial_tx_buffer_tail = 0;
+uint8_t rxRingBufferBlock[RX_BUFFER_SIZE]; // Power of 2 is more efficient here (according to the docs)
+struct ring_buf rxRingBuf;
 
+uint8_t txRingBufferBlock[TX_BUFFER_SIZE];
+struct ring_buf txRingBuf;
 
 // Returns the number of bytes available in the RX serial buffer.
-uint8_t serial_get_rx_buffer_available()
-{
-  uint8_t rtail = serial_rx_buffer_tail; // Copy to limit multiple calls to volatile
-  if (serial_rx_buffer_head >= rtail) { return(RX_BUFFER_SIZE - (serial_rx_buffer_head-rtail)); }
-  return((rtail-serial_rx_buffer_head-1));
-}
-
+uint32_t serial_get_rx_buffer_available () { return ring_buf_capacity_get (&rxRingBuf) - ring_buf_size_get (&rxRingBuf); }
 
 // Returns the number of bytes used in the RX serial buffer.
 // NOTE: Deprecated. Not used unless classic status reports are enabled in config.h.
-uint8_t serial_get_rx_buffer_count()
-{
-  uint8_t rtail = serial_rx_buffer_tail; // Copy to limit multiple calls to volatile
-  if (serial_rx_buffer_head >= rtail) { return(serial_rx_buffer_head-rtail); }
-  return (RX_BUFFER_SIZE - (rtail-serial_rx_buffer_head));
-}
-
+uint32_t serial_get_rx_buffer_count () { return ring_buf_size_get (&rxRingBuf); }
 
 // Returns the number of bytes used in the TX serial buffer.
 // NOTE: Not used except for debugging and ensuring no TX bottlenecks.
-uint8_t serial_get_tx_buffer_count()
-{
-  uint8_t ttail = serial_tx_buffer_tail; // Copy to limit multiple calls to volatile
-  if (serial_tx_buffer_head >= ttail) { return(serial_tx_buffer_head-ttail); }
-  return (TX_RING_BUFFER - (ttail-serial_tx_buffer_head));
-}
+uint32_t serial_get_tx_buffer_count () { return ring_buf_size_get (&txRingBuf); }
 
+static void uartInterruptHandler (const struct device *dev, void *user_data);
 
 void serial_init()
 {
-  // Set baud rate
-  #if BAUD_RATE < 57600
-    uint16_t UBRR0_value = ((F_CPU / (8L * BAUD_RATE)) - 1)/2 ;
-    UCSR0A &= ~(1 << U2X0); // baud doubler off  - Only needed on Uno XXX
-  #else
-    uint16_t UBRR0_value = ((F_CPU / (4L * BAUD_RATE)) - 1)/2;
-    UCSR0A |= (1 << U2X0);  // baud doubler on for high baud rates, i.e. 115200
-  #endif
-  UBRR0H = UBRR0_value >> 8;
-  UBRR0L = UBRR0_value;
+   // Before error checking (which returns from this function and would leave ring buffers uninitialized).
+        ring_buf_init (&rxRingBuf, sizeof (rxRingBufferBlock), rxRingBufferBlock);
+        ring_buf_init (&txRingBuf, sizeof (txRingBufferBlock), txRingBufferBlock);
 
-  // enable rx, tx, and interrupt on complete reception of a byte
-  UCSR0B |= (1<<RXEN0 | 1<<TXEN0 | 1<<RXCIE0);
+        // This usart has to be initialized and set-up in src/mcu-peripherals.cc
+        uart = device_get_binding (DT_LABEL (DT_ALIAS (grbluart)));
 
-  // defaults to 8-bit, no parity, 1 stop bit
+        if (!uart) {
+                LOG_ERR ("Problem configuring uart");
+                return;
+        }
+
+        // IRQ based API.
+        uart_irq_callback_set (uart, uartInterruptHandler);
+
+        /* Enable rx interrupts */
+        uart_irq_rx_enable (uart);
 }
 
 
 // Writes one byte to the TX serial buffer. Called by main program.
 void serial_write(uint8_t data) {
-  // Calculate next head
-  uint8_t next_head = serial_tx_buffer_head + 1;
-  if (next_head == TX_RING_BUFFER) { next_head = 0; }
 
-  // Wait until there is space in the buffer
-  while (next_head == serial_tx_buffer_tail) {
+  while (ring_buf_put (&txRingBuf, &data, 1) != 1) {
     // TODO: Restructure st_prep_buffer() calls to be executed here during a long print.
     if (sys_rt_exec_state & EXEC_RESET) { return; } // Only check for abort to avoid an endless loop.
   }
 
-  // Store data and advance head
-  serial_tx_buffer[serial_tx_buffer_head] = data;
-  serial_tx_buffer_head = next_head;
-
-  // Enable Data Register Empty Interrupt to make sure tx-streaming is running
-  UCSR0B |=  (1 << UDRIE0);
+  uart_irq_tx_enable (uart);
 }
 
-
+/*
 // Data Register Empty Interrupt handler
 ISR(SERIAL_UDRE)
 {
@@ -120,31 +98,32 @@ ISR(SERIAL_UDRE)
   // Turn off Data Register Empty Interrupt to stop tx-streaming if this concludes the transfer
   if (tail == serial_tx_buffer_head) { UCSR0B &= ~(1 << UDRIE0); }
 }
-
+*/
 
 // Fetches the first byte in the serial read buffer. Called by main program.
 uint8_t serial_read()
 {
-  uint8_t tail = serial_rx_buffer_tail; // Temporary serial_rx_buffer_tail (to optimize for volatile)
-  if (serial_rx_buffer_head == tail) {
-    return SERIAL_NO_DATA;
-  } else {
-    uint8_t data = serial_rx_buffer[tail];
+        uint8_t data;
 
-    tail++;
-    if (tail == RX_RING_BUFFER) { tail = 0; }
-    serial_rx_buffer_tail = tail;
+        if (ring_buf_get (&rxRingBuf, &data, 1) != 1) {
+    return SERIAL_NO_DATA;
+        }
 
     return data;
-  }
 }
 
 
-ISR(SERIAL_RX)
+static void uartInterruptHandler (const struct device *dev, void *user_data)
 {
-  uint8_t data = UDR0;
-  uint8_t next_head;
+        ARG_UNUSED (user_data);
 
+        while (uart_irq_update (dev) && uart_irq_is_pending (dev)) {
+
+                if (uart_irq_rx_ready (dev)) {
+                        int recvLen = 0;
+                        uint8_t data = 0;
+
+                        while ((recvLen = uart_fifo_read (dev, &data, 1)) == 1) {
   // Pick off realtime command characters directly from the serial stream. These characters are
   // not passed into the main buffer, but these set system state flag bits for realtime execution.
   switch (data) {
@@ -162,7 +141,11 @@ ISR(SERIAL_RX)
             }
             break; 
           #ifdef DEBUG
-            case CMD_DEBUG_REPORT: {uint8_t sreg = SREG; cli(); bit_true(sys_rt_exec_debug,EXEC_DEBUG_REPORT); SREG = sreg;} break;
+          case CMD_DEBUG_REPORT: {
+            unsigned int l = irq_lock ();
+            bit_true (sys_rt_exec_debug, EXEC_DEBUG_REPORT);
+            irq_unlock (l);
+          } break;
           #endif
           case CMD_FEED_OVR_RESET: system_set_exec_motion_override_flag(EXEC_FEED_OVR_RESET); break;
           case CMD_FEED_OVR_COARSE_PLUS: system_set_exec_motion_override_flag(EXEC_FEED_OVR_COARSE_PLUS); break;
@@ -184,21 +167,35 @@ ISR(SERIAL_RX)
           #endif
         }
         // Throw away any unfound extended-ASCII character by not passing it to the serial buffer.
-      } else { // Write character to buffer
-        next_head = serial_rx_buffer_head + 1;
-        if (next_head == RX_RING_BUFFER) { next_head = 0; }
+                                        }
+                                        else { // Write character to buffer
+                                                int written = ring_buf_put (&rxRingBuf, &data, 1);
 
-        // Write data to buffer unless it is full.
-        if (next_head != serial_rx_buffer_tail) {
-          serial_rx_buffer[serial_rx_buffer_head] = data;
-          serial_rx_buffer_head = next_head;
+                                                if (written != 1) {
+                                                        LOG_ERR ("GRBL UART RX byte dropped.");
         }
       }
   }
+                        } // while
 }
 
+                if (uart_irq_tx_ready (dev)) {
+                        uint8_t buffer[64];
 
-void serial_reset_read_buffer()
-{
-  serial_rx_buffer_tail = serial_rx_buffer_head;
+                        uint32_t bytesReadLen = ring_buf_get (&txRingBuf, buffer, sizeof (buffer));
+
+                        if (bytesReadLen == 0) {
+                                uart_irq_tx_disable (dev);
+                                continue;
 }
+
+                        int sendLen = uart_fifo_fill (dev, buffer, bytesReadLen);
+
+                        if (sendLen < bytesReadLen) {
+                                LOG_ERR ("Drop %d bytes", bytesReadLen - sendLen);
+                        }
+                }
+        }
+}
+
+void serial_reset_read_buffer () { ring_buf_reset (&rxRingBuf); }

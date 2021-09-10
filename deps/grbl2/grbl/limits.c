@@ -40,6 +40,7 @@
 
 void limits_init()
 {
+  /*
   LIMIT_DDR &= ~(LIMIT_MASK); // Set as input pins
 
   #ifdef DISABLE_LIMIT_PIN_PULL_UP
@@ -60,14 +61,17 @@ void limits_init()
     WDTCSR |= (1<<WDCE) | (1<<WDE);
     WDTCSR = (1<<WDP0); // Set time-out at ~32msec.
   #endif
+  */
 }
 
 
 // Disables hard limits.
 void limits_disable()
 {
+  /*
   LIMIT_PCMSK &= ~LIMIT_MASK;  // Disable specific pins of the Pin Change Interrupt
   PCICR &= ~(1 << LIMIT_INT);  // Disable Pin Change Interrupt
+  */
 }
 
 
@@ -77,6 +81,7 @@ void limits_disable()
 uint8_t limits_get_state()
 {
   uint8_t limit_state = 0;
+  /*
   uint8_t pin = (LIMIT_PIN & LIMIT_MASK);
   #ifdef INVERT_LIMIT_PIN_MASK
     pin ^= INVERT_LIMIT_PIN_MASK;
@@ -91,6 +96,7 @@ uint8_t limits_get_state()
       if (pin & (1<<DUAL_LIMIT_BIT)) { limit_state |= (1 << N_AXIS); }
     #endif
   }
+  */
   return(limit_state);
 }
 
@@ -106,6 +112,7 @@ uint8_t limits_get_state()
 // homing cycles and will not respond correctly. Upon user request or need, there may be a
 // special pinout for an e-stop, but it is generally recommended to just directly connect
 // your e-stop switch to the Arduino reset pin, since it is the most correct way to do this.
+/*
 #ifndef ENABLE_SOFTWARE_DEBOUNCE
   ISR(LIMIT_INT_vect) // DEFAULT: Limit pin change interrupt process.
   {
@@ -146,6 +153,7 @@ uint8_t limits_get_state()
     }
   }
 #endif
+*/
 
 // Homes the specified cycle axes, sets the machine position, and performs a pull-off motion after
 // completing. Homing is a special motion case, which involves rapid uncontrolled stops to locate
@@ -156,6 +164,7 @@ uint8_t limits_get_state()
 // TODO: Move limit pin-specific calls to a general function for portability.
 void limits_go_home(uint8_t cycle_mask)
 {
+  /*
   if (sys.abort) { return; } // Block if system reset has been issued.
 
   // Initialize plan data struct for homing motion. Spindle and coolant are disabled.
@@ -402,6 +411,7 @@ void limits_go_home(uint8_t cycle_mask)
     }
   }
   sys.step_control = STEP_CONTROL_NORMAL_OP; // Return step control to normal operation.
+  */
 }
 
 

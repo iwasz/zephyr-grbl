@@ -13,12 +13,14 @@ include_directories (src)
 include_directories (deps/TMC2130Stepper/src)
 include_directories (deps/etl/include/)
 include_directories (deps/gsl-lite/include)
-include_directories (deps/grbl/grbl)
+include_directories (deps/grbl2/grbl)
+
+add_definitions("-DDEFAULTS_ZEPHYR_GRBL_PLOTTER")
 
 target_sources(app PRIVATE 
     src/main.cc
-    src/mcu-peripherals.cc
-    src/stepper-drivers.cc
+    src/zephyrGrblPeripherals.cc
+    src/stepperDriverSettings.cc
 
     # deps/TMC2130Stepper/src/source/SW_SPI.cpp
     deps/TMC2130Stepper/src/source/TMC2130Stepper_CHOPCONF.cpp
@@ -30,48 +32,24 @@ target_sources(app PRIVATE
     deps/TMC2130Stepper/src/source/TMC2130Stepper_PWMCONF.cpp
     deps/TMC2130Stepper/src/source/TMC2130Stepper.cpp
 
-    # Not needed, leaved commented to avoid confusion
-    # deps/grb/grbl/coolant_control.c
-    src/coolant_control_stub.c
-
-    # NVM
-    # deps/grbl/grbl/eeprom.c
-    src/eeprom_stub.c
-    deps/grbl/grbl/gcode.c
-    deps/grbl/grbl/jog.c
-    
-    # Pins, interrupts
-    # deps/grbl/grbl/limits.c
-    src/limits_stub.c
-    
-    deps/grbl/grbl/main.c
-    deps/grbl/grbl/motion_control.c
-    deps/grbl/grbl/nuts_bolts.c
-    deps/grbl/grbl/planner.c
-    deps/grbl/grbl/print.c
-
-    # Pins, interrupts
-    # deps/grbl/grbl/probe.c
-    src/probe_stub.c
-
-    deps/grbl/grbl/protocol.c
-    deps/grbl/grbl/report.c
-    
-    # UART, iunterrupts
-    deps/grbl/grbl/serial.c
-    
-    # Undeclared macros and variables.
-    deps/grbl/grbl/settings.c
-
-    # PWM, probably not necessary
-    # deps/grbl/grbl/spindle_control.c
-    src/spindle_control_stub.c
-    
-    # # Pins, interrupts, timer. This is the file where everything happens.
-    deps/grbl/grbl/stepper.c
-        
-    # # Pins, interrupts. SREG (interrupt status)
-    deps/grbl/grbl/system.c
+    deps/grbl2/grbl/coolant_control.c
+    deps/grbl2/grbl/eeprom.c    
+    deps/grbl2/grbl/gcode.c
+    deps/grbl2/grbl/jog.c
+    deps/grbl2/grbl/limits.c        
+    deps/grbl2/grbl/main.c
+    deps/grbl2/grbl/motion_control.c
+    deps/grbl2/grbl/nuts_bolts.c
+    deps/grbl2/grbl/planner.c
+    deps/grbl2/grbl/print.c
+    deps/grbl2/grbl/probe.c
+    deps/grbl2/grbl/protocol.c
+    deps/grbl2/grbl/report.c   
+    deps/grbl2/grbl/serial.c
+    deps/grbl2/grbl/settings.c
+    deps/grbl2/grbl/spindle_control.c
+    deps/grbl2/grbl/stepper.c
+    deps/grbl2/grbl/system.c
 )
 
 set(gen_dir ${ZEPHYR_BINARY_DIR}/include/generated/)

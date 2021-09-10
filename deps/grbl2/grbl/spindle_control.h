@@ -21,6 +21,9 @@
 
 #ifndef spindle_control_h
 #define spindle_control_h
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define SPINDLE_NO_SYNC false
 #define SPINDLE_FORCE_SYNC true
@@ -69,5 +72,7 @@ uint8_t spindle_get_state();
 // Stop and start spindle routines. Called by all spindle routines and stepper ISR.
 void spindle_stop();
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif

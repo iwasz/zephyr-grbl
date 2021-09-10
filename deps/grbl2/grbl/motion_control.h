@@ -21,7 +21,9 @@
 
 #ifndef motion_control_h
 #define motion_control_h
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // System motion commands must have a line number of zero.
 #define HOMING_CYCLE_LINE_NUMBER 0
@@ -63,4 +65,7 @@ void mc_parking_motion(float *parking_target, plan_line_data_t *pl_data);
 // Performs system reset. If in motion state, kills all motion and sets system alarm.
 void mc_reset();
 
+#ifdef __cplusplus
+}
+#endif
 #endif

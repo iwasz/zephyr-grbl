@@ -20,6 +20,9 @@
 
 #ifndef coolant_control_h
 #define coolant_control_h
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define COOLANT_NO_SYNC     false
 #define COOLANT_FORCE_SYNC  true
@@ -44,4 +47,7 @@ void coolant_set_state(uint8_t mode);
 // G-code parser entry-point for setting coolant states. Checks for and executes additional conditions.
 void coolant_sync(uint8_t mode);
 
+#ifdef __cplusplus
+}
+#endif
 #endif
