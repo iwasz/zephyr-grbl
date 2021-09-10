@@ -89,22 +89,22 @@
 		compatible = "gpio-keys";
 
 		left {// Something wrong with this one
-			gpios = <&gpiob 7 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			gpios = <&gpiob 7 (GPIO_ACTIVE_LOW| GPIO_PULL_UP)>;
 			label = "Edge switch on the left side (touching the west attachment)";
 		};
 
 		right {
-			gpios = <&gpioa 15 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			gpios = <&gpioa 15 (GPIO_ACTIVE_LOW| GPIO_PULL_UP)>;
 			label = "Edge switch on the right side (touching the east attachment)";
 		};
 
 		top {
-			gpios = <&gpioc 14 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			gpios = <&gpiob 3 (GPIO_ACTIVE_LOW| GPIO_PULL_UP)>;
 			label = "Edge switch on the top (touching the north attachment)";
 		};
 
 		bottom {
-			gpios = <&gpioc 11 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			gpios = <&gpioc 11 (GPIO_ACTIVE_LOW| GPIO_PULL_UP)>;
 			label = "Edge switch on the bottom side (touching the pen holder)";
 		};
 

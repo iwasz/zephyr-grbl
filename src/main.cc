@@ -47,20 +47,20 @@ static const char *disk_mount_pt = "/SD:";
 void switchPressed (const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
         if (dev == leftSwitch && pins == BIT (SWITCH_LEFT_PIN)) {
-                gpio_pin_set (dirX, MOTORX_DIR_PIN, false);
-                LOG_DBG ("L\n");
+                // gpio_pin_set (dirX, MOTORX_DIR_PIN, false);
+                LOG_INF ("L\n");
         }
         else if (dev == rightSwitch && pins == BIT (SWITCH_RIGHT_PIN)) {
-                gpio_pin_set (dirX, MOTORX_DIR_PIN, true);
-                LOG_DBG ("R\n");
+                // gpio_pin_set (dirX, MOTORX_DIR_PIN, true);
+                LOG_INF ("R\n");
         }
         else if (dev == topSwitch && pins == BIT (SWITCH_TOP_PIN)) {
-                gpio_pin_set (dirY, MOTORY_DIR_PIN, false);
-                LOG_DBG ("T\n");
+                // gpio_pin_set (dirY, MOTORY_DIR_PIN, false);
+                LOG_INF ("T\n");
         }
         else if (dev == bottomSwitch && pins == BIT (SWITCH_BOTTOM_PIN)) {
-                gpio_pin_set (dirY, MOTORY_DIR_PIN, true);
-                LOG_DBG ("B\n");
+                // gpio_pin_set (dirY, MOTORY_DIR_PIN, true);
+                LOG_INF ("B\n");
         }
 }
 

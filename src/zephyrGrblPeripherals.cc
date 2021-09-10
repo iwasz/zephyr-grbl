@@ -214,7 +214,7 @@ void mcuPeripheralsInit ()
                 return;
         }
 
-        ret = gpio_pin_interrupt_configure (leftSwitch, SWITCH_LEFT_PIN, GPIO_INT_EDGE_TO_ACTIVE);
+        ret = gpio_pin_interrupt_configure (leftSwitch, SWITCH_LEFT_PIN, GPIO_INT_EDGE_FALLING);
 
         if (ret != 0) {
                 printk ("Error %d: failed to configure interrupt\n", ret);
@@ -235,7 +235,7 @@ void mcuPeripheralsInit ()
                 return;
         }
 
-        ret = gpio_pin_interrupt_configure (rightSwitch, SWITCH_RIGHT_PIN, GPIO_INT_EDGE_TO_ACTIVE);
+        ret = gpio_pin_interrupt_configure (rightSwitch, SWITCH_RIGHT_PIN, GPIO_INT_EDGE_FALLING);
 
         if (ret != 0) {
                 printk ("Error %d: failed to configure interrupt\n", ret);
@@ -256,7 +256,7 @@ void mcuPeripheralsInit ()
                 return;
         }
 
-        ret = gpio_pin_interrupt_configure (topSwitch, SWITCH_TOP_PIN, GPIO_INT_EDGE_TO_ACTIVE);
+        ret = gpio_pin_interrupt_configure (topSwitch, SWITCH_TOP_PIN, GPIO_INT_EDGE_FALLING);
 
         if (ret != 0) {
                 printk ("Error %d: failed to configure interrupt\n", ret);
@@ -277,7 +277,7 @@ void mcuPeripheralsInit ()
                 return;
         }
 
-        ret = gpio_pin_interrupt_configure (bottomSwitch, SWITCH_BOTTOM_PIN, GPIO_INT_EDGE_TO_ACTIVE);
+        ret = gpio_pin_interrupt_configure (bottomSwitch, SWITCH_BOTTOM_PIN, GPIO_INT_EDGE_FALLING);
 
         if (ret != 0) {
                 printk ("Error %d: failed to configure interrupt\n", ret);

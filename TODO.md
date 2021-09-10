@@ -47,9 +47,9 @@
 * [ ] I may be wrong but there's something wrong with the scale of the plot when drawn in inches. In mm everything seems to be OK (sphere dia ~146mm).
 * [ ] When compiled with -O0 and ran under GDB, the quality (accuracy) deteriorates drammaticaly. Why is it **so much** of a change?
 * [ ] **Maybe**, just maybe refactor the TMC2130 code to a Zephyr driver.
-* [ ] **Maybe** join the two GitHub projects (grbl and zephyr-grbl-plotter) into one. Easier for maintenance.
-  * [ ] Rollback formating done by my clang-format for easier diff'ing.
-* [ ] Rollback my earlier changes that deleted the inversion implementation in GRBL. 
+* [x] **Maybe** join the two GitHub projects (grbl and zephyr-grbl-plotter) into one. Easier for maintenance.
+  * [x] Rollback formating done by my clang-format for easier diff'ing.
+* [x] Rollback my earlier changes that deleted the inversion implementation in GRBL. 
 * [ ] Settings to NVM.
 * [ ] Implement limit pins.
 * [ ] What does the "probe pin" do?
