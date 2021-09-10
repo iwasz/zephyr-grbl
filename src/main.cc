@@ -26,6 +26,7 @@ extern "C" int grblMain ();
 
 LOG_MODULE_REGISTER (main);
 
+void testStepperMotors ();
 static int lsdir (const char *path);
 
 // static FATFS fat_fs;
@@ -212,13 +213,27 @@ void main ()
         // }
 
         grblMain ();
+        // testStepperMotors ();
+}
 
-        // bool stepState{};
+/**
+ * Dummy function for motor testing.
+ */
+void testStepperMotors ()
+{
+        bool stepState{};
+        bool dirState{};
 
-        // while (1) {
-        //         gpio_pin_set (stepX, MOTORX_STEP_PIN, (int)stepState);
-        //         gpio_pin_set (stepY, MOTORY_STEP_PIN, (int)stepState);
-        //         stepState = !stepState;
-        //         k_usleep (10000);
-        // }
+        while (true) {
+                gpio_pin_set (dirX, MOTORX_DIR_PIN, dirState);
+                // gpio_pin_set (dirY, MOTORX_DIR_PIN, dirState);
+                dirState = !dirState;
+
+                for (int i = 0; i < 10000; ++i) {
+                        gpio_pin_set (stepX, MOTORX_STEP_PIN, (int)stepState);
+                        // gpio_pin_set (stepY, MOTORY_STEP_PIN, (int)stepState);
+                        stepState = !stepState;
+                        k_usleep (10000);
+                }
+        }
 }

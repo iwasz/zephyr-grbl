@@ -1,3 +1,6 @@
+# Links 
+* https://forum.prusaprinters.org/forum/original-prusa-i3-mk3s-mk3-hardware-firmware-and-software-help/tmc2130-driver-infos-and-modifications/
+
 # Unable to run the 'circle.ng' example
 Jogging under UGS worked, but running the [example code](https://diymachining.com/g-code-example/) resulted in various errors which looked like (number of those messages was also changing from run to run):
 

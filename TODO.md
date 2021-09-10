@@ -54,3 +54,12 @@
   * [ ] `settings.pulse_microseconds` is set, but it is not of any use, because there is no *output compare* callback set. It can't even be set right now.
   * [ ] The plotter is slightly slower than the desired feed rate (~25%).
   * [ ] When set to very low feed rate, the movement is jerky. For instance when feed rate is 1 mm/min the carret advances a fraction of a mm, and then stops, and repeats. Ticking sound can be heard.
+    * [ ] Ahhh I spent a day on this. It seems that : 1. I TMC2130 works best with 24V instead of 12. When feed from 12V, the back EMF to input signal is to high (compared to 12V supply signal driving the coils), and TMC drivers get confused. 2. (more importantly) my motors are somehow unsuitable for the TMC2130. I don't understand this, but it has something to do with the current and coil resistance. 
+  
+      | Model           | rated current | coil resistance | steps | notes           |
+      | --------------- | ------------- | --------------- | ----- | --------------- |
+      | JK28HS32-0674   | 0.67A         | 6.2             | 200   | small one       |
+      | JK42HM40-0406   | 0.4A          | 60              | 400   | nema 17 shorter |
+      | 42STHM48-0406   | 0.4A          | 60              | 400   | nema 17 longer  |
+      | Prusa i3 MK3 XY | 1A            | 6.5             | 200   |                 |
+      | 17HS4401        | 1.5A          | 2.4             | 200   | popular, cheap  |

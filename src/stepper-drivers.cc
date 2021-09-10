@@ -21,35 +21,80 @@ void init ()
         spiCfg1.frequency = 500000U;
         spiCfg1.cs = &spiCs1;
 
+        // Based on Prusa i3 MK3 settings.
         TMC2130Stepper driver1 (spi, &spiCfg1);
 
-        // driver1.rms_current (600);
-        // driver1.stealthChop (1);
-        // driver1.microsteps (8);
-        driver1.dedge (true);
-        driver1.push ();
+        const int RUNNING_CURRENT = 16; // Prusa has 16 for X and 20 for Y here.
+        const int HOLDING_CURRENT = 1;
+        const int MICRO_STEPS = 8; // TODO 256 µ steps
+
+        // TODO suboptimal. Following bunch of setting sould be stored using only 1 32bit SPI write to the CHOPCONF register.
         driver1.toff (3);
-        driver1.tbl (1);
-        driver1.chm (true);
-        driver1.hysteresis_start (4);
-        driver1.hysteresis_end (-2);
-        driver1.rms_current (800); // mA
-        driver1.microsteps (8);
+        driver1.hysteresis_start (5);
+        driver1.hysteresis_end (1);
+        driver1.fd (0);
+        driver1.disfdcc (0);
+        driver1.rndtf (0);
+        driver1.chm (0);
+        driver1.tbl (2);
 
-        driver1.sgt (10);
-        driver1.sfilt (false);
+        if (RUNNING_CURRENT <= 31) {
+                driver1.vsense (1);
+        }
+        else {
+                driver1.vsense (0);
+        }
 
-        driver1.diag1_stall (true);
-        driver1.diag1_active_high (true);
+        driver1.vhighfs (0);
+        driver1.vhighchm (0);
+        driver1.sync (0);
+        driver1.microsteps (MICRO_STEPS);
+        driver1.intpol ((MICRO_STEPS == 256) ? (0) : (1));
+        driver1.dedge (1);
+        driver1.diss2g (0);
+        driver1.I_scale_analog (true);
 
-        driver1.coolstep_min_speed (0xFFFFF); // 20bit max
-        driver1.THIGH (0);
-        driver1.semin (5);
-        driver1.semax (2);
-        driver1.sedn (0b01);
-        driver1.sg_stall_value (0);
+        /*--------------------------------------------------------------------------*/
+
+        if (RUNNING_CURRENT <= 31) {
+                driver1.ihold (HOLDING_CURRENT & 0x1f);
+                driver1.irun (RUNNING_CURRENT & 0x1f);
+        }
+        else {
+                driver1.ihold ((HOLDING_CURRENT >> 1) & 0x1f);
+                driver1.irun ((RUNNING_CURRENT >> 1) & 0x1f);
+        }
+
+        /*--------------------------------------------------------------------------*/
+
+        driver1.power_down_delay (0);
+
+        /*--------------------------------------------------------------------------*/
+
+        driver1.COOLCONF (3 << 16);
+        driver1.coolstep_min_speed (430); // Silent -> 0, normal 430
+
+#define TMC2130_GCONF_NORMAL 0x00000000 // spreadCycle
+#define TMC2130_GCONF_SGSENS 0x00003180 // spreadCycle with stallguard (stall activates DIAG0 and DIAG1 [pushpull])
+#define TMC2130_GCONF_SILENT 0x00000004 // stealthChop
+        driver1.GCONF (TMC2130_GCONF_SGSENS);
+
+        /*--------------------------------------------------------------------------*/
+
+        driver1.pwm_ampl (230); // X 230, Y == 235
+        driver1.pwm_grad (2);
+        driver1.pwm_freq (2);
+        driver1.pwm_autoscale (1);
+        driver1.pwm_symmetric (0);
+        driver1.freewheel (0);
+
+        /*--------------------------------------------------------------------------*/
+
+        driver1.TPWMTHRS (0);
 
         gpio_pin_set (enableX, MOTORX_ENABLE_PIN, true);
+
+        /****************************************************************************/
 
         const struct spi_cs_control spiCs2 = {.gpio_dev = nssY, .delay = 0, .gpio_pin = MOTORY_NSS_PIN, .gpio_dt_flags = GPIO_ACTIVE_LOW};
         struct spi_config spiCfg2 = {0};
@@ -60,28 +105,64 @@ void init ()
 
         TMC2130Stepper driver2 (spi, &spiCfg2);
 
-        // driver2.rms_current (600);
-        // driver2.stealthChop (1);
-        // driver2.microsteps (8);
-        driver2.dedge (true);
-        driver2.push ();
         driver2.toff (3);
-        driver2.tbl (1);
-        driver2.chm (true);
-        driver2.hysteresis_start (4);
-        driver2.hysteresis_end (-2);
-        driver2.rms_current (800); // mA
-        driver2.microsteps (8);
+        driver2.hysteresis_start (5);
+        driver2.hysteresis_end (1);
+        driver2.fd (0);
+        driver2.disfdcc (0);
+        driver2.rndtf (0);
+        driver2.chm (0);
+        driver2.tbl (2);
 
-        driver2.diag1_stall (1);
-        driver2.diag1_active_high (1);
-        driver2.coolstep_min_speed (0xFFFFF); // 20bit max
-        driver2.THIGH (0);
-        driver2.semin (5);
-        driver2.semax (2);
-        driver2.sedn (0b01);
-        driver2.sg_stall_value (0);
+        if (RUNNING_CURRENT <= 31) {
+                driver2.vsense (1);
+        }
+        else {
+                driver2.vsense (0);
+        }
 
+        driver2.vhighfs (0);
+        driver2.vhighchm (0);
+        driver2.sync (0);
+        driver2.microsteps (MICRO_STEPS);
+        driver2.intpol ((MICRO_STEPS == 256) ? (0) : (1));
+        driver2.dedge (1);
+        driver2.diss2g (0);
+        driver2.I_scale_analog (true);
+
+        /*--------------------------------------------------------------------------*/
+
+        if (RUNNING_CURRENT <= 31) {
+                driver2.ihold (HOLDING_CURRENT & 0x1f);
+                driver2.irun (RUNNING_CURRENT & 0x1f);
+        }
+        else {
+                driver2.ihold ((HOLDING_CURRENT >> 1) & 0x1f);
+                driver2.irun ((RUNNING_CURRENT >> 1) & 0x1f);
+        }
+
+        /*--------------------------------------------------------------------------*/
+
+        driver2.power_down_delay (0);
+
+        /*--------------------------------------------------------------------------*/
+
+        driver2.COOLCONF (3 << 16);
+        driver2.coolstep_min_speed (430); // Silent -> 0, normal 430
+        driver2.GCONF (TMC2130_GCONF_SGSENS);
+
+        /*--------------------------------------------------------------------------*/
+
+        driver2.pwm_ampl (230); // X 230, Y == 235
+        driver2.pwm_grad (2);
+        driver2.pwm_freq (2);
+        driver2.pwm_autoscale (1);
+        driver2.pwm_symmetric (0);
+        driver2.freewheel (0);
+
+        /*--------------------------------------------------------------------------*/
+
+        driver2.TPWMTHRS (0);
         gpio_pin_set (enableY, MOTORY_ENABLE_PIN, true);
 }
 
