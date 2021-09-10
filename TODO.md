@@ -48,6 +48,11 @@
 * [ ] When compiled with -O0 and ran under GDB, the quality (accuracy) deteriorates drammaticaly. Why is it **so much** of a change?
 * [ ] **Maybe**, just maybe refactor the TMC2130 code to a Zephyr driver.
 * [ ] **Maybe** join the two GitHub projects (grbl and zephyr-grbl-plotter) into one. Easier for maintenance.
+  * [ ] Rollback formating done by my clang-format for easier diff'ing.
+* [ ] Rollback my earlier changes that deleted the inversion implementation in GRBL. 
+* [ ] Settings to NVM.
+* [ ] Implement limit pins.
+* [ ] What does the "probe pin" do?
 * [x] Speeds in `default.h` are probably in wrong units. Default there equals to 10mm per minute. This should result in very slow movement, but in reality the device moves fast.
   * [x] Feed rate is not working at all as it seems? It is ignored in G commands.
   * [x] After resolving the problems with feed rate, when the feedrate sent to the plloter is too low (1-10) the ploter stops.
