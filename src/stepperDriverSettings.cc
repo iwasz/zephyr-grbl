@@ -26,7 +26,7 @@ void init ()
 
         const int RUNNING_CURRENT = 16; // Prusa has 16 for X and 20 for Y here.
         const int HOLDING_CURRENT = 1;
-        const int MICRO_STEPS = 256; // TODO 256 µ steps?
+        const int MICRO_STEPS = 8; // TODO 256 µ steps?
         const bool I_SCALE_ANALOG = false;
 
         // TODO suboptimal. Following bunch of setting sould be stored using only 1 32bit SPI write to the CHOPCONF register.

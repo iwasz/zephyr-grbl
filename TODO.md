@@ -59,7 +59,6 @@
   * [x] Homing moves opposite direction
   * [ ] After homing it sometimes move in the X direction.
   * [ ] Homing / limit switches have too short of a travel. Fast moving axes don't have a chance to break on ~1mm distance. 
-* [ ] What does the "probe pin" do?
 * [x] Speeds in `default.h` are probably in wrong units. Default there equals to 10mm per minute. This should result in very slow movement, but in reality the device moves fast.
   * [x] Feed rate is not working at all as it seems? It is ignored in G commands.
   * [x] After resolving the problems with feed rate, when the feedrate sent to the plloter is too low (1-10) the ploter stops.

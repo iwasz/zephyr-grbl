@@ -13,7 +13,7 @@ include_directories (src)
 include_directories (deps/TMC2130Stepper/src)
 include_directories (deps/etl/include/)
 include_directories (deps/gsl-lite/include)
-include_directories (deps/grbl2/grbl)
+include_directories (deps/gnea-grbl/grbl)
 
 add_definitions("-DDEFAULTS_ZEPHYR_GRBL_PLOTTER")
 
@@ -32,24 +32,24 @@ target_sources(app PRIVATE
     deps/TMC2130Stepper/src/source/TMC2130Stepper_PWMCONF.cpp
     deps/TMC2130Stepper/src/source/TMC2130Stepper.cpp
 
-    deps/grbl2/grbl/coolant_control.c
-    deps/grbl2/grbl/eeprom.c    
-    deps/grbl2/grbl/gcode.c
-    deps/grbl2/grbl/jog.c
-    deps/grbl2/grbl/limits.c        
-    deps/grbl2/grbl/main.c
-    deps/grbl2/grbl/motion_control.c
-    deps/grbl2/grbl/nuts_bolts.c
-    deps/grbl2/grbl/planner.c
-    deps/grbl2/grbl/print.c
-    deps/grbl2/grbl/probe.c
-    deps/grbl2/grbl/protocol.c
-    deps/grbl2/grbl/report.c   
-    deps/grbl2/grbl/serial.c
-    deps/grbl2/grbl/settings.c
-    deps/grbl2/grbl/spindle_control.c
-    deps/grbl2/grbl/stepper.c
-    deps/grbl2/grbl/system.c
+    deps/gnea-grbl/grbl/coolant_control.c
+    deps/gnea-grbl/grbl/eeprom.c    
+    deps/gnea-grbl/grbl/gcode.c
+    deps/gnea-grbl/grbl/jog.c
+    deps/gnea-grbl/grbl/limits.c        
+    deps/gnea-grbl/grbl/main.c
+    deps/gnea-grbl/grbl/motion_control.c
+    deps/gnea-grbl/grbl/nuts_bolts.c
+    deps/gnea-grbl/grbl/planner.c
+    deps/gnea-grbl/grbl/print.c
+    deps/gnea-grbl/grbl/probe.c
+    deps/gnea-grbl/grbl/protocol.c
+    deps/gnea-grbl/grbl/report.c   
+    deps/gnea-grbl/grbl/serial.c
+    deps/gnea-grbl/grbl/settings.c
+    deps/gnea-grbl/grbl/spindle_control.c
+    deps/gnea-grbl/grbl/stepper.c
+    deps/gnea-grbl/grbl/system.c
 )
 
 set(gen_dir ${ZEPHYR_BINARY_DIR}/include/generated/)

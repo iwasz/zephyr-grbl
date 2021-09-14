@@ -52,11 +52,13 @@ Terminology:
 ## What has been done in order to port GRBL
 * Added a new macro for my machine named DEFAULTS_ZEPHYR_GRBL_PLOTTER in the `config.h` and globally in the `CMakeLists.txt`. Used mostly in the `defaults.h`
 * Coolant control, spindle **comented out**.
-* Added `extern "C" {` to most of the `*.h` files to enable C++ interoperability.
-* Added definitions for my machine in the `defaults.h`. 
-* Eeprom support reimplemented.
+* [x] Added `extern "C" {` to most of the `*.h` files to enable C++ interoperability.
+* [x] Added definitions for my machine in the `defaults.h`. 
+* [ ] Eeprom support ported.
 * [x] Zephyr PWM module was modified to accept a timer output compare ISR callback.
 * [x] AVR GPIO registers code ported to zephyr 
+* [x] Homing and limiters ported.
+* [ ] Probe implementation commented out.
 * [x] ~~Gpio inverting functionality stripped down as from now the Zephyr's device tree configuration is used for this.~~
 * ~~Logging ported to Zephyr.~~ Rolled back.
 * [x] Port uart code to zephyr.
