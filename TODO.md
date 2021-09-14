@@ -54,6 +54,16 @@
   * [x] Rollback formating done by my clang-format for easier diff'ing.
 * [x] Rollback my earlier changes that deleted the inversion implementation in GRBL. 
 * [ ] Settings to NVM.
+  * [ ] MCUboot has to be installed in order to flash partitions to work at all. 
+  | name            | EEPROM addr | notes                                                                |
+  | --------------- | ----------- | -------------------------------------------------------------------- |
+  | version         | 0           | 10                                                                   |
+  | global settings | 1           | The settings. Written and read all at once. Structure : `settings_t` |
+  | parameters      | 512         | "coord data" only. xxxx,yyyy,zzzz,c i.e. 3x float                    |
+  | startup block   | 768         | N_STARTUP_LINE lines of g-code. String 80 (2x)                       |
+  | build info      | 942         | Can be accesed using the $I command (?), string 80                   |
+  | *last writable* | 1023        |
+
 * [x] Implement limit pins. Now that the limit pins work I noticed that:
   * [x] Homing blocks other threads. Try inserting k_yield somewhere.
   * [x] Homing moves opposite direction

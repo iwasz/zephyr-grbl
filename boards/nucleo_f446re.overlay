@@ -200,3 +200,22 @@ zephyr_udc0: &usbotg_fs {
 	};
 };
 
+&flash0 {
+
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		boot_partition: partition@0 {
+			label = "mcuboot";
+			reg = <0x00000000 0x00008000>;
+			read-only;
+		};
+
+		storage0_partition: partition@8000 {
+			label = "storage0";
+			reg = <0x00008000 0x0008000>;
+		};
+	};
+};

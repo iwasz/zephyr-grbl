@@ -1,20 +1,28 @@
-# See also
+# What this is
+A GRBL port to Zephyr RTOS with some additional features like software CDC ACM serial port and SD card support. The greatest benefit of having the GRBL ported to Zephyr is the ability of running it on variety of platforms with way more powerful CPUs than the original Arduino. As of now this project is targeting the [STM32F446RE](https://www.st.com/en/microcontrollers-microprocessors/stm32f446re.html) and with minor modifications in the *overlay* file (or adding another overlay file to be precise) it should work on different STM32-s as well. 
+
+The only *non standard* driver this project uses is the `modules/hw_timer` and this is the only obstacle for running this on MCUs different than STM32-s. `modules/hw_timer` is derived from the `pwm` driver and its only purpose is to fire a callback(s) on a timer update event (and possibly on output compare event in the future). Other parts are implemented in stock Zephyr.
+
+The project was written to power my [CoreXY pen plotter](https://hackaday.io/project/177237-corexy-pen-plotter), and as such has some parts not implemented (probing) and others not tested (Z-axis with stepper motor, see below). It should be a good starting point to develop something more complete that would run the variety of CNC machines. Pull requests are welcome.
+
 * [TODO](TODO.md) list of things to do.
 * [My notes](NOTES.md) on problems I've had. 
 * [Hackaday.io project page](https://hackaday.io/project/177237-corexy-pen-plotter)
 
 # How to build
+Tested with Zephyr RTOS 2.6.99. Familiarize yourself with the [Zephyr RTOS build process](https://docs.zephyrproject.org/latest/getting_started/index.html) first. Then:
+
 ```
 rm -Rf build
-cmake -B build -G Ninja -b -DBOARD=stm32f746g_disco -DBOARD_ROOT=. .
-cmake -B build -G Ninja -b -DBOARD=nucleo_h743zi -DBOARD_ROOT=. .
-cmake -B build -G Ninja -b -DBOARD=nucleo_l476rg -DBOARD_ROOT=. .
+cmake -B build -G Ninja -b -DBOARD=nucleo_f446re -DBOARD_ROOT=. .
 ninja -C build
 ```
 
-Use ninja or IDE to build. Upload with `west flash` and after this initial upload GDB from vscode also sohould work.
+Use ninja or IDE to build. Upload with `west flash` or directly with the openocd.
 
-* I copied `zephyrproject/zephyr/boards/arm/stm32f746g_disco` to my project to be able to modify the `stm32f746g_disco.dts` file.
+-----
+-----
+-----
 
 # Topics to mention in a write up
 * Software

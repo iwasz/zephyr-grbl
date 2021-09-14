@@ -7,6 +7,12 @@
  ****************************************************************************/
 
 #include "eeprom.h"
+#include "grbl.h"
+#include <drivers/flash.h>
+#include <storage/flash_map.h>
+#include <fs/nvs.h>
+
+LOG_MODULE_REGISTER(eeprom);
 
 /* These EEPROM bits have different names on different devices. */
 #ifndef EEPE
@@ -20,6 +26,61 @@
 
 /* Define to reduce code size. */
 #define EEPROM_IGNORE_SELFPROG //!< Remove SPM flag polling.
+
+static struct nvs_fs fs;
+
+#define STORAGE_NODE DT_NODE_BY_FIXED_PARTITION_LABEL(storage0)
+#define FLASH_NODE DT_MTD_FROM_FIXED_PARTITION(STORAGE_NODE)
+#define ADDRESS_ID 1
+
+void init_nvs ()
+{
+        const struct device *flash_dev;
+		int rc;
+
+        /* define the nvs file system by settings with:
+         *      sector_size equal to the pagesize,
+         *      3 sectors
+         *      starting at FLASH_AREA_OFFSET(storage0)
+         */
+        flash_dev = DEVICE_DT_GET(FLASH_NODE);
+
+        if (!device_is_ready(flash_dev)) {
+                LOG_ERR("Flash device %s is not ready", flash_dev->name);
+                return;
+        }
+
+        fs.offset = FLASH_AREA_OFFSET(storage0);   
+		struct flash_pages_info info = {0,};
+ 
+        if ((rc = flash_get_page_info_by_offs(flash_dev, fs.offset, &info))) {
+                LOG_ERR("Unable to get page info");
+                return;
+        }
+
+        fs.sector_size = info.size;
+        fs.sector_count = 2U; 
+
+        if ((rc = nvs_init(&fs, flash_dev->name))) {
+                LOG_ERR("Flash Init failed");
+                return;
+        }
+
+        /* ADDRESS_ID is used to store an address, lets see if we can
+         * read it from flash, since we don't know the size read the
+         * maximum possible
+         */
+		char buf[16];
+        rc = nvs_read(&fs, ADDRESS_ID, &buf, sizeof(buf));
+        if (rc > 0) { /* item was found, show it */
+                printk("Id: %d, Address: %s", ADDRESS_ID, buf);
+        } else   {/* item was not found, add it */
+                strcpy(buf, "192.168.1.1");
+                printk("No address found, adding %s at id %d", buf,
+                       ADDRESS_ID);
+                (void)nvs_write(&fs, ADDRESS_ID, &buf, strlen(buf)+1);
+        }
+}
 
 /*! \brief  Read byte from EEPROM.
  *
