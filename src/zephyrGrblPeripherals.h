@@ -93,28 +93,6 @@
 
 /*--------------------------------------------------------------------------*/
 
-#define SWITCH_LEFT_NODE DT_PATH (edge_switch_pins, left)
-#define SWITCH_LEFT_LABEL DT_GPIO_LABEL (SWITCH_LEFT_NODE, gpios)
-#define SWITCH_LEFT_PIN DT_GPIO_PIN (SWITCH_LEFT_NODE, gpios)
-#define SWITCH_LEFT_FLAGS DT_GPIO_FLAGS (SWITCH_LEFT_NODE, gpios)
-
-#define SWITCH_RIGHT_NODE DT_PATH (edge_switch_pins, right)
-#define SWITCH_RIGHT_LABEL DT_GPIO_LABEL (SWITCH_RIGHT_NODE, gpios)
-#define SWITCH_RIGHT_PIN DT_GPIO_PIN (SWITCH_RIGHT_NODE, gpios)
-#define SWITCH_RIGHT_FLAGS DT_GPIO_FLAGS (SWITCH_RIGHT_NODE, gpios)
-
-#define SWITCH_TOP_NODE DT_PATH (edge_switch_pins, top)
-#define SWITCH_TOP_LABEL DT_GPIO_LABEL (SWITCH_TOP_NODE, gpios)
-#define SWITCH_TOP_PIN DT_GPIO_PIN (SWITCH_TOP_NODE, gpios)
-#define SWITCH_TOP_FLAGS DT_GPIO_FLAGS (SWITCH_TOP_NODE, gpios)
-
-#define SWITCH_BOTTOM_NODE DT_PATH (edge_switch_pins, bottom)
-#define SWITCH_BOTTOM_LABEL DT_GPIO_LABEL (SWITCH_BOTTOM_NODE, gpios)
-#define SWITCH_BOTTOM_PIN DT_GPIO_PIN (SWITCH_BOTTOM_NODE, gpios)
-#define SWITCH_BOTTOM_FLAGS DT_GPIO_FLAGS (SWITCH_BOTTOM_NODE, gpios)
-
-/*--------------------------------------------------------------------------*/
-
 // #define PWM_LED0_NODE DT_ALIAS (pwm_led0)
 // #define PWM_LED0_NODE DT_ALIAS (grblpwm)
 // #define PWM_LABEL DT_PWMS_LABEL (PWM_LED0_NODE) // PWM_LABEL is designed so it gets the phandle of a device from the "pwms" property.

@@ -44,26 +44,6 @@ static const char *disk_mount_pt = "/SD:";
 
 /****************************************************************************/
 
-void switchPressed (const struct device *dev, struct gpio_callback *cb, uint32_t pins)
-{
-        if (dev == leftSwitch && pins == BIT (SWITCH_LEFT_PIN)) {
-                // gpio_pin_set (dirX, MOTORX_DIR_PIN, false);
-                LOG_INF ("L\n");
-        }
-        else if (dev == rightSwitch && pins == BIT (SWITCH_RIGHT_PIN)) {
-                // gpio_pin_set (dirX, MOTORX_DIR_PIN, true);
-                LOG_INF ("R\n");
-        }
-        else if (dev == topSwitch && pins == BIT (SWITCH_TOP_PIN)) {
-                // gpio_pin_set (dirY, MOTORY_DIR_PIN, false);
-                LOG_INF ("T\n");
-        }
-        else if (dev == bottomSwitch && pins == BIT (SWITCH_BOTTOM_PIN)) {
-                // gpio_pin_set (dirY, MOTORY_DIR_PIN, true);
-                LOG_INF ("B\n");
-        }
-}
-
 /****************************************************************************/
 
 static int lsdir (const char *path)
@@ -172,32 +152,6 @@ void main ()
 
         /*--------------------------------------------------------------------------*/
 
-        static struct gpio_callback buttonCbDataLeft;
-        gpio_init_callback (&buttonCbDataLeft, switchPressed, BIT (SWITCH_LEFT_PIN));
-        gpio_add_callback (leftSwitch, &buttonCbDataLeft);
-
-        static struct gpio_callback buttonCbDataRight;
-        gpio_init_callback (&buttonCbDataRight, switchPressed, BIT (SWITCH_RIGHT_PIN));
-        gpio_add_callback (rightSwitch, &buttonCbDataRight);
-
-        static struct gpio_callback buttonCbDataTop;
-        gpio_init_callback (&buttonCbDataTop, switchPressed, BIT (SWITCH_TOP_PIN));
-        gpio_add_callback (topSwitch, &buttonCbDataTop);
-
-        static struct gpio_callback buttonCbDataBottom;
-        gpio_init_callback (&buttonCbDataBottom, switchPressed, BIT (SWITCH_BOTTOM_PIN));
-        gpio_add_callback (bottomSwitch, &buttonCbDataBottom);
-
-        static struct gpio_callback motor1StallCbData;
-        // gpio_init_callback (&motor1StallCbData, switchPressed, BIT (MOTORX_STALL_PIN));
-        // gpio_add_callback (motor1Stall, &motor1StallCbData);
-
-        static struct gpio_callback motor2StallCbData;
-        // gpio_init_callback (&motor2StallCbData, switchPressed, BIT (MOTORY_STALL_PIN));
-        // gpio_add_callback (motor2Stall, &motor2StallCbData);
-
-        /*--------------------------------------------------------------------------*/
-
         // gpio_pin_set (dirX, MOTOR1_DIR_PIN, false);
         // gpio_pin_set (dirY, MOTOR2_DIR_PIN, false);
 
@@ -226,14 +180,14 @@ void testStepperMotors ()
 
         while (true) {
                 gpio_pin_set (dirX, MOTORX_DIR_PIN, dirState);
-                // gpio_pin_set (dirY, MOTORX_DIR_PIN, dirState);
+                gpio_pin_set (dirY, MOTORX_DIR_PIN, dirState);
                 dirState = !dirState;
 
                 for (int i = 0; i < 10000; ++i) {
                         gpio_pin_set (stepX, MOTORX_STEP_PIN, (int)stepState);
-                        // gpio_pin_set (stepY, MOTORY_STEP_PIN, (int)stepState);
+                        gpio_pin_set (stepY, MOTORY_STEP_PIN, (int)stepState);
                         stepState = !stepState;
-                        k_usleep (10000);
+                        k_usleep (1000);
                 }
         }
 }

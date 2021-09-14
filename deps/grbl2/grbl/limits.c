@@ -21,6 +21,7 @@
 
 #include "grbl.h"
 
+LOG_MODULE_REGISTER (limits);
 
 // Homing axis search distance multiplier. Computed by this value times the cycle travel.
 #ifndef HOMING_AXIS_SEARCH_SCALAR
@@ -38,9 +39,52 @@
   #define DUAL_AXIS_CHECK_TRIGGER_2   bit(2)
 #endif
 
+#define SWITCH_LEFT_NODE DT_PATH (edge_switch_pins, left)
+#define SWITCH_LEFT_LABEL DT_GPIO_LABEL (SWITCH_LEFT_NODE, gpios)
+#define SWITCH_LEFT_PIN DT_GPIO_PIN (SWITCH_LEFT_NODE, gpios)
+#define SWITCH_LEFT_FLAGS DT_GPIO_FLAGS (SWITCH_LEFT_NODE, gpios)
+
+#define SWITCH_RIGHT_NODE DT_PATH (edge_switch_pins, right)
+#define SWITCH_RIGHT_LABEL DT_GPIO_LABEL (SWITCH_RIGHT_NODE, gpios)
+#define SWITCH_RIGHT_PIN DT_GPIO_PIN (SWITCH_RIGHT_NODE, gpios)
+#define SWITCH_RIGHT_FLAGS DT_GPIO_FLAGS (SWITCH_RIGHT_NODE, gpios)
+
+#define SWITCH_TOP_NODE DT_PATH (edge_switch_pins, top)
+#define SWITCH_TOP_LABEL DT_GPIO_LABEL (SWITCH_TOP_NODE, gpios)
+#define SWITCH_TOP_PIN DT_GPIO_PIN (SWITCH_TOP_NODE, gpios)
+#define SWITCH_TOP_FLAGS DT_GPIO_FLAGS (SWITCH_TOP_NODE, gpios)
+
+#define SWITCH_BOTTOM_NODE DT_PATH (edge_switch_pins, bottom)
+#define SWITCH_BOTTOM_LABEL DT_GPIO_LABEL (SWITCH_BOTTOM_NODE, gpios)
+#define SWITCH_BOTTOM_PIN DT_GPIO_PIN (SWITCH_BOTTOM_NODE, gpios)
+#define SWITCH_BOTTOM_FLAGS DT_GPIO_FLAGS (SWITCH_BOTTOM_NODE, gpios)
+
+const struct device *leftSwitch;
+const struct device *rightSwitch;
+const struct device *topSwitch;
+const struct device *bottomSwitch;
+const struct device *motor1Stall;
+const struct device *motor2Stall;
+
+struct gpio_callback buttonCbDataLeft;
+struct gpio_callback buttonCbDataRight;
+struct gpio_callback buttonCbDataTop;
+struct gpio_callback buttonCbDataBottom;
+struct gpio_callback motor1StallCbData;
+struct gpio_callback motor2StallCbData;
+
+struct k_timer limitSwitchDebounceTimer;
+
+enum LimitPinState { limitPinStateNone, limitPinStateLeft, limitPinStateTop, limitPinStateRight, limitPinStateBottom };
+uint8_t limitPinState = limitPinStateNone;
+
+static void limitSwitchPressed (const struct device *dev, struct gpio_callback *cb, uint32_t pins);
+static void limitSwitchDebounceCallback (struct k_timer *timer_id);
+
 void limits_init()
 {
-  /*
+/* 
+  Left for reference.
   LIMIT_DDR &= ~(LIMIT_MASK); // Set as input pins
 
   #ifdef DISABLE_LIMIT_PIN_PULL_UP
@@ -48,14 +92,153 @@ void limits_init()
   #else
     LIMIT_PORT |= (LIMIT_MASK);  // Enable internal pull-up resistors. Normal high operation.
   #endif
+*/
+  static bool initialized = false;
 
+  if (initialized) {
+    return;
+  }
+
+        int ret = 0;
+
+        if ((leftSwitch = device_get_binding (SWITCH_LEFT_LABEL)) == NULL) {
+                LOG_ERR ("leftSwitch == NULL");
+                return;
+        }
+
+        if ((ret = gpio_pin_configure (leftSwitch, SWITCH_LEFT_PIN, GPIO_INPUT | SWITCH_LEFT_FLAGS)) < 0) {
+                LOG_ERR ("leftSwitch configure fail %d", ret);
+                return;
+        }
+
+        if ((ret = gpio_pin_interrupt_configure (leftSwitch, SWITCH_LEFT_PIN, GPIO_INT_EDGE_TO_ACTIVE)) != 0) {
+                LOG_ERR ("Error %d: leftSwitch interrupt", ret);
+                return;
+        }
+
+        /*--------------------------------------------------------------------------*/
+
+        if ((rightSwitch = device_get_binding (SWITCH_RIGHT_LABEL)) == NULL) {
+                LOG_ERR ("rightSwitch == NULL");
+                return;
+        }
+
+        if ((ret = gpio_pin_configure (rightSwitch, SWITCH_RIGHT_PIN, GPIO_INPUT | SWITCH_RIGHT_FLAGS)) < 0) {
+                LOG_ERR ("rightSwitch configure fail %d", ret);
+                return;
+        }
+
+        if ((ret = gpio_pin_interrupt_configure (rightSwitch, SWITCH_RIGHT_PIN, GPIO_INT_EDGE_TO_ACTIVE)) != 0) {
+                LOG_ERR ("Error %d: rightSwitch interrupt", ret);
+                return;
+        }
+
+        /*--------------------------------------------------------------------------*/
+
+        if ((topSwitch = device_get_binding (SWITCH_TOP_LABEL)) == NULL) {
+                LOG_ERR ("topSwitch == NULL");
+                return;
+        }
+
+        if ((ret = gpio_pin_configure (topSwitch, SWITCH_TOP_PIN, GPIO_INPUT | SWITCH_TOP_FLAGS)) < 0) {
+                LOG_ERR ("topSwitch configure fail %d", ret);
+                return;
+        }
+
+        if ((ret = gpio_pin_interrupt_configure (topSwitch, SWITCH_TOP_PIN, GPIO_INT_EDGE_TO_ACTIVE)) != 0) {
+                LOG_ERR ("Error %d: topSwitch interrupt", ret);
+                return;
+        }
+
+        /*--------------------------------------------------------------------------*/
+
+        if ((bottomSwitch = device_get_binding (SWITCH_BOTTOM_LABEL)) == NULL) {
+                LOG_ERR ("bottomSwitch == NULL");
+                return;
+        }
+
+        if ((ret = gpio_pin_configure (bottomSwitch, SWITCH_BOTTOM_PIN, GPIO_INPUT | SWITCH_BOTTOM_FLAGS)) < 0) {
+                LOG_ERR ("bottomSwitch configure fail %d", ret);
+                return;
+        }
+
+        if ((ret = gpio_pin_interrupt_configure (bottomSwitch, SWITCH_BOTTOM_PIN, GPIO_INT_EDGE_TO_ACTIVE)) != 0) {
+                LOG_ERR ("Error %d: bottomSwitch interrupt", ret);
+                return;
+        }
+
+        /*--------------------------------------------------------------------------*/
+
+        if ((motor1Stall = device_get_binding (MOTORX_STALL_LABEL)) == NULL) {
+                LOG_ERR ("motor1Stall == NULL");
+                return;
+        }
+
+        if ((ret = gpio_pin_configure (motor1Stall, MOTORX_STALL_PIN, GPIO_INPUT | MOTORX_STALL_FLAGS)) < 0) {
+                LOG_ERR ("motor1Stall configure fail %d", ret);
+                return;
+        }
+
+        if ((ret = gpio_pin_interrupt_configure (motor1Stall, MOTORX_STALL_PIN, GPIO_INT_EDGE_TO_ACTIVE)) != 0) {
+                LOG_ERR ("Error %d: motor1Stall interrupt", ret);
+                return;
+        }
+
+        /*--------------------------------------------------------------------------*/
+
+        if ((motor2Stall = device_get_binding (MOTORY_STALL_LABEL)) == NULL) {
+                LOG_ERR ("motor2Stall == NULL");
+                return;
+        }
+
+        if ((ret = gpio_pin_configure (motor2Stall, MOTORY_STALL_PIN, GPIO_INPUT | MOTORY_STALL_FLAGS)) < 0) {
+                LOG_ERR ("motor2Stall configure fail %d", ret);
+                return;
+        }
+
+        if ((ret = gpio_pin_interrupt_configure (motor2Stall, MOTORY_STALL_PIN, GPIO_INT_EDGE_TO_ACTIVE)) != 0) {
+                LOG_ERR ("Error %d: motor2Stall interrupt", ret);
+                return;
+        }
+
+  /*
   if (bit_istrue(settings.flags,BITFLAG_HARD_LIMIT_ENABLE)) {
     LIMIT_PCMSK |= LIMIT_MASK; // Enable specific pins of the Pin Change Interrupt
     PCICR |= (1 << LIMIT_INT); // Enable Pin Change Interrupt
   } else {
     limits_disable();
   }
+  */
 
+#ifdef ENABLE_SOFTWARE_DEBOUNCE
+        k_timer_init (&limitSwitchDebounceTimer, limitSwitchDebounceCallback, NULL);
+#endif
+
+  if (bit_istrue(settings.flags,BITFLAG_HARD_LIMIT_ENABLE)) {
+        gpio_init_callback (&buttonCbDataLeft, limitSwitchPressed, BIT (SWITCH_LEFT_PIN));
+        gpio_add_callback (leftSwitch, &buttonCbDataLeft);
+
+        gpio_init_callback (&buttonCbDataRight, limitSwitchPressed, BIT (SWITCH_RIGHT_PIN));
+        gpio_add_callback (rightSwitch, &buttonCbDataRight);
+
+        gpio_init_callback (&buttonCbDataTop, limitSwitchPressed, BIT (SWITCH_TOP_PIN));
+        gpio_add_callback (topSwitch, &buttonCbDataTop);
+
+        gpio_init_callback (&buttonCbDataBottom, limitSwitchPressed, BIT (SWITCH_BOTTOM_PIN));
+        gpio_add_callback (bottomSwitch, &buttonCbDataBottom);
+
+        // gpio_init_callback (&motor1StallCbData, switchPressed, BIT (MOTORX_STALL_PIN));
+        // gpio_add_callback (motor1Stall, &motor1StallCbData);
+
+        // gpio_init_callback (&motor2StallCbData, switchPressed, BIT (MOTORY_STALL_PIN));
+        // gpio_add_callback (motor2Stall, &motor2StallCbData);
+  } else {
+    limits_disable();
+  }
+
+  initialized = true;
+
+  /*
   #ifdef ENABLE_SOFTWARE_DEBOUNCE
     MCUSR &= ~(1<<WDRF);
     WDTCSR |= (1<<WDCE) | (1<<WDE);
@@ -72,6 +255,10 @@ void limits_disable()
   LIMIT_PCMSK &= ~LIMIT_MASK;  // Disable specific pins of the Pin Change Interrupt
   PCICR &= ~(1 << LIMIT_INT);  // Disable Pin Change Interrupt
   */
+  gpio_remove_callback(leftSwitch, &buttonCbDataLeft);
+  gpio_remove_callback (rightSwitch, &buttonCbDataRight);
+  gpio_remove_callback (topSwitch, &buttonCbDataTop);
+  gpio_remove_callback (bottomSwitch, &buttonCbDataBottom);
 }
 
 
@@ -81,12 +268,26 @@ void limits_disable()
 uint8_t limits_get_state()
 {
   uint8_t limit_state = 0;
-  /*
-  uint8_t pin = (LIMIT_PIN & LIMIT_MASK);
+
+  // TODO It seems that GRBL needs only one switch per axis, not 2 as I thought.
+  bool axisX = gpio_pin_get (leftSwitch, SWITCH_LEFT_PIN) || gpio_pin_get (rightSwitch, SWITCH_RIGHT_PIN);
+  bool axisY = gpio_pin_get (topSwitch, SWITCH_TOP_PIN) || gpio_pin_get (bottomSwitch, SWITCH_BOTTOM_PIN);
+  bool axisZ = 0; // TODO make room for this in the overlay and elsewhere.
+
+  uint8_t pin = ((axisX<<X_LIMIT_BIT)|(axisY<<Y_LIMIT_BIT)|(axisZ<<Z_LIMIT_BIT));
+
   #ifdef INVERT_LIMIT_PIN_MASK
     pin ^= INVERT_LIMIT_PIN_MASK;
   #endif
-  if (bit_isfalse(settings.flags,BITFLAG_INVERT_LIMIT_PINS)) { pin ^= LIMIT_MASK; }
+
+  // In zephyr there is discrepancy between pin "active / inactive" state and 
+  // physical "high / low" states. Here we operate on the higher level "active / inactive"
+  // Which means, that we are always checking for gpio_pin_get returning TRUE.
+  // The user can then configure in the overlay file if he wants those pins to 
+  // operate in positive or negative logic. Therefore below bit_isfalse has been
+  // changed to bit_istrue (originally they worked on the "physical" level which was 
+  // 1 by default and 0 on limit switch triggered).
+  if (bit_istrue(settings.flags,BITFLAG_INVERT_LIMIT_PINS)) { pin ^= LIMIT_MASK; } 
   if (pin) {
     uint8_t idx;
     for (idx=0; idx<N_AXIS; idx++) {
@@ -96,7 +297,7 @@ uint8_t limits_get_state()
       if (pin & (1<<DUAL_LIMIT_BIT)) { limit_state |= (1 << N_AXIS); }
     #endif
   }
-  */
+  
   return(limit_state);
 }
 
@@ -154,6 +355,91 @@ uint8_t limits_get_state()
   }
 #endif
 */
+/**
+ * Limit switch was pressed callback with differentiation which one 
+ * was it. It seems that GRBL doesn't need the information about the
+ * source and it checks the state of the pins elsewhere, later?
+ */
+static void limitSwitchPressed (const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+{
+#ifndef ENABLE_SOFTWARE_DEBOUNCE
+    if (sys.state != STATE_ALARM) {
+      if (!(sys_rt_exec_alarm)) {
+        #ifdef HARD_LIMIT_FORCE_STATE_CHECK
+          // Check limit pin state.
+          if (limits_get_state()) {
+            mc_reset(); // Initiate system kill.
+            system_set_exec_alarm(EXEC_ALARM_HARD_LIMIT); // Indicate hard limit critical event
+          }
+        #else
+          mc_reset(); // Initiate system kill.
+          system_set_exec_alarm(EXEC_ALARM_HARD_LIMIT); // Indicate hard limit critical event
+        #endif
+      }
+    }    
+#else // Do software debounce.
+        // This ISR reacts to an edge from inactive to active (whatever the physical state). So we are "active".
+        if (dev == leftSwitch && pins == BIT (SWITCH_LEFT_PIN)) {
+                limitPinState = limitPinStateLeft;
+        }
+        else if (dev == rightSwitch && pins == BIT (SWITCH_RIGHT_PIN)) {
+                limitPinState = limitPinStateRight;
+        }
+        else if (dev == topSwitch && pins == BIT (SWITCH_TOP_PIN)) {
+                limitPinState = limitPinStateTop;
+        }
+        else if (dev == bottomSwitch && pins == BIT (SWITCH_BOTTOM_PIN)) {
+                limitPinState = limitPinStateBottom;
+        }
+
+        k_timer_start (&limitSwitchDebounceTimer, K_MSEC (settings.homing_debounce_delay), K_NO_WAIT);
+#endif
+}
+
+/**
+ *
+ */
+static void limitSwitchDebounceCallback (struct k_timer *timer_id)
+{
+  ARG_UNUSED(timer_id);
+  bool consistent = false;
+
+        if (limitPinState == limitPinStateLeft) {
+                if (gpio_pin_get (leftSwitch, SWITCH_LEFT_PIN) == 1) {
+                        consistent = true;
+                        // LOG_INF ("L");
+                }
+        }
+        else if (limitPinState == limitPinStateRight) {
+                if (gpio_pin_get (rightSwitch, SWITCH_RIGHT_PIN) == 1) {
+                        consistent = true;
+                        // LOG_INF ("R");
+                }
+        }
+        else if (limitPinState == limitPinStateTop) {
+                if (gpio_pin_get (topSwitch, SWITCH_TOP_PIN) == 1) {
+                        consistent = true;
+                        // LOG_INF ("T");
+                }
+        }
+        else if (limitPinState == limitPinStateBottom) {
+                if (gpio_pin_get (bottomSwitch, SWITCH_BOTTOM_PIN) == 1) {
+                        consistent = true;
+                        // LOG_INF ("B");
+                }
+        }
+
+    if (sys.state != STATE_ALARM) {  // Ignore if already in alarm state. 
+      if (!(sys_rt_exec_alarm) && consistent) {
+        // Check limit pin state. 
+        if (limits_get_state()) {
+          mc_reset(); // Initiate system kill.
+          system_set_exec_alarm(EXEC_ALARM_HARD_LIMIT); // Indicate hard limit critical event
+        }
+      }  
+    }      
+}
+
 
 // Homes the specified cycle axes, sets the machine position, and performs a pull-off motion after
 // completing. Homing is a special motion case, which involves rapid uncontrolled stops to locate
@@ -163,8 +449,7 @@ uint8_t limits_get_state()
 // NOTE: Only the abort realtime command can interrupt this process.
 // TODO: Move limit pin-specific calls to a general function for portability.
 void limits_go_home(uint8_t cycle_mask)
-{
-  /*
+{  
   if (sys.abort) { return; } // Block if system reset has been issued.
 
   // Initialize plan data struct for homing motion. Spindle and coolant are disabled.
@@ -276,6 +561,8 @@ void limits_go_home(uint8_t cycle_mask)
     st_prep_buffer(); // Prep and fill segment buffer from newly planned block.
     st_wake_up(); // Initiate motion
     do {
+      k_yield ();
+
       if (approach) {
         // Check limit state. Lock out cycle axes when they change.
         limit_state = limits_get_state();
@@ -411,7 +698,6 @@ void limits_go_home(uint8_t cycle_mask)
     }
   }
   sys.step_control = STEP_CONTROL_NORMAL_OP; // Return step control to normal operation.
-  */
 }
 
 
@@ -438,3 +724,5 @@ void limits_soft_check(float *target)
     return;
   }
 }
+
+

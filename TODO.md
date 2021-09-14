@@ -6,11 +6,14 @@
 * [ ] Implement printing from a SD card.
 
 # Hardware
+* Make a sutout for 17HS4401's cable supporting protrusion. 
 * Kareta
   * [ ] Wytłoczenia na łożyska w karecie. Kiedy się ją skręci, łożyska się nie kręca kiedy się skręci mocno karetę.
   * [ ] Problem z kablami. Albo wywalić switche, albo jakoś to poprawić.
   * [ ] It's almost impossible to stick the belt into place. The slots are to tight!
-  * [ ] PCB for edge switches.
+  * [ ] PCB for limit switches.
+  * [ ] Shielded cable for limit switches & Z (as suggested by grbl docs.)
+  * [ ] Low pass filter on limiter inputs (as suggested by grbl docs.)
 * Pen holder
   * [x] Body3 łamie się jak się je wsadza. Grubsze od tyłu.
   * [x] Sprężyna ma być montowana na pręcik 1.4 (drut ocynk).
@@ -51,7 +54,11 @@
   * [x] Rollback formating done by my clang-format for easier diff'ing.
 * [x] Rollback my earlier changes that deleted the inversion implementation in GRBL. 
 * [ ] Settings to NVM.
-* [ ] Implement limit pins.
+* [x] Implement limit pins. Now that the limit pins work I noticed that:
+  * [x] Homing blocks other threads. Try inserting k_yield somewhere.
+  * [x] Homing moves opposite direction
+  * [ ] After homing it sometimes move in the X direction.
+  * [ ] Homing / limit switches have too short of a travel. Fast moving axes don't have a chance to break on ~1mm distance. 
 * [ ] What does the "probe pin" do?
 * [x] Speeds in `default.h` are probably in wrong units. Default there equals to 10mm per minute. This should result in very slow movement, but in reality the device moves fast.
   * [x] Feed rate is not working at all as it seems? It is ignored in G commands.
@@ -59,12 +66,14 @@
   * [ ] `settings.pulse_microseconds` is set, but it is not of any use, because there is no *output compare* callback set. It can't even be set right now.
   * [ ] The plotter is slightly slower than the desired feed rate (~25%).
   * [ ] When set to very low feed rate, the movement is jerky. For instance when feed rate is 1 mm/min the carret advances a fraction of a mm, and then stops, and repeats. Ticking sound can be heard.
-    * [ ] Ahhh I spent a day on this. It seems that : 1. I TMC2130 works best with 24V instead of 12. When feed from 12V, the back EMF to input signal is to high (compared to 12V supply signal driving the coils), and TMC drivers get confused. 2. (more importantly) my motors are somehow unsuitable for the TMC2130. I don't understand this, but it has something to do with the current and coil resistance. 
+    * [x] Ahhh I spent a day on this. It seems that : 1. I TMC2130 works best with 24V instead of 12. When feed from 12V, the back EMF to input signal is to high (compared to 12V supply signal driving the coils), and TMC drivers get confused. 2. (more importantly) my motors are somehow unsuitable for the TMC2130. I don't understand this, but it has something to do with the current and coil resistance. 
   
-      | Model           | rated current | coil resistance | steps | notes           |
-      | --------------- | ------------- | --------------- | ----- | --------------- |
-      | JK28HS32-0674   | 0.67A         | 6.2             | 200   | small one       |
-      | JK42HM40-0406   | 0.4A          | 60              | 400   | nema 17 shorter |
-      | 42STHM48-0406   | 0.4A          | 60              | 400   | nema 17 longer  |
-      | Prusa i3 MK3 XY | 1A            | 6.5             | 200   |                 |
-      | 17HS4401        | 1.5A          | 2.4             | 200   | popular, cheap  |
+      | Model           | rated current | coil resistance | steps | notes                         |
+      | --------------- | ------------- | --------------- | ----- | ----------------------------- |
+      | JK28HS32-0674   | 0.67A         | 6.2             | 200   | small one, smooth             |
+      | JK42HM40-0406   | 0.4A          | 60              | 400   | nema 17 shorter, jerky, noisy |
+      | 42STHM48-0406   | 0.4A          | 60              | 400   | nema 17 longer, jerky, noisy  |
+      | Prusa i3 MK3 XY | 1A            | 6.5             | 200   | reference                     |
+      | 17HS4401        | 1.5A          | 2.4             | 200   | popular, cheap, smooth        |
+      After testing I'v decided to go with 17HS4401 as they prooven to perform smooth and silent.
+* [ ] Main IRQ should have higher priority than the logging and shell threads. It's the most important one! Thers no point of having it with the priority so low.

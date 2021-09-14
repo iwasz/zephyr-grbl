@@ -584,9 +584,9 @@
 #define DEFAULT_X_ACCELERATION (200.0 * 60 * 60)    // 15*60*60 mm/min^2 = 15 mm/sec^2
 #define DEFAULT_Y_ACCELERATION (200.0 * 60 * 60)    // 15*60*60 mm/min^2 = 15 mm/sec^2
 #define DEFAULT_Z_ACCELERATION (200000.0 * 60 * 60) // Can be super high, because it's a servo.
-#define DEFAULT_X_MAX_TRAVEL 200.0                  // mm NOTE: Must be a positive value.
-#define DEFAULT_Y_MAX_TRAVEL 200.0                  // mm NOTE: Must be a positive value.
-#define DEFAULT_Z_MAX_TRAVEL 200.0                  // mm NOTE: Must be a positive value.
+#define DEFAULT_X_MAX_TRAVEL 238.0                  // mm NOTE: Must be a positive value.
+#define DEFAULT_Y_MAX_TRAVEL 340.0                  // mm NOTE: Must be a positive value.
+#define DEFAULT_Z_MAX_TRAVEL 6.0                  // mm NOTE: Must be a positive value.
 #define DEFAULT_SPINDLE_RPM_MAX 10000.0             // rpm
 #define DEFAULT_SPINDLE_RPM_MIN 0.0                 // rpm
 #define DEFAULT_STEP_PULSE_MICROSECONDS 10
@@ -596,17 +596,17 @@
 #define DEFAULT_STATUS_REPORT_MASK 1       // MPos enabled
 #define DEFAULT_JUNCTION_DEVIATION 0.02    // mm
 #define DEFAULT_ARC_TOLERANCE 0.002        // mm
-#define DEFAULT_REPORT_INCHES 0            // false
-#define DEFAULT_INVERT_ST_ENABLE 0         // false
-#define DEFAULT_INVERT_LIMIT_PINS 0        // false
-#define DEFAULT_SOFT_LIMIT_ENABLE 0        // false
-#define DEFAULT_HARD_LIMIT_ENABLE 0        // false
-#define DEFAULT_INVERT_PROBE_PIN 0         // false
-#define DEFAULT_LASER_MODE 0               // false
-#define DEFAULT_HOMING_ENABLE 0            // false
-#define DEFAULT_HOMING_DIR_MASK 0          // move positive dir
+#define DEFAULT_REPORT_INCHES 0            
+#define DEFAULT_INVERT_ST_ENABLE 0         
+#define DEFAULT_INVERT_LIMIT_PINS 0        
+#define DEFAULT_SOFT_LIMIT_ENABLE 0        
+#define DEFAULT_HARD_LIMIT_ENABLE 1        
+#define DEFAULT_INVERT_PROBE_PIN 0         
+#define DEFAULT_LASER_MODE 0               
+#define DEFAULT_HOMING_ENABLE 1            
+#define DEFAULT_HOMING_DIR_MASK 3          
 #define DEFAULT_HOMING_FEED_RATE 25.0      // mm/min
-#define DEFAULT_HOMING_SEEK_RATE 250.0     // mm/min
+#define DEFAULT_HOMING_SEEK_RATE 1000.0     // mm/min
 #define DEFAULT_HOMING_DEBOUNCE_DELAY 250  // msec (0-65k)
 #define DEFAULT_HOMING_PULLOFF 1.0         // mm
 
