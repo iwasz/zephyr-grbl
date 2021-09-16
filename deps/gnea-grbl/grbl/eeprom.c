@@ -29,9 +29,10 @@ LOG_MODULE_REGISTER(eeprom);
 
 static struct nvs_fs fs;
 
-#define STORAGE_NODE DT_NODE_BY_FIXED_PARTITION_LABEL(storage0)
+#define STORAGE_NODE DT_NODE_BY_FIXED_PARTITION_LABEL(storage)
 #define FLASH_NODE DT_MTD_FROM_FIXED_PARTITION(STORAGE_NODE)
 #define ADDRESS_ID 1
+#define RBT_CNT_ID 3
 
 void init_nvs ()
 {
@@ -41,7 +42,7 @@ void init_nvs ()
         /* define the nvs file system by settings with:
          *      sector_size equal to the pagesize,
          *      3 sectors
-         *      starting at FLASH_AREA_OFFSET(storage0)
+         *      starting at FLASH_AREA_OFFSET(storage)
          */
         flash_dev = DEVICE_DT_GET(FLASH_NODE);
 
@@ -50,7 +51,7 @@ void init_nvs ()
                 return;
         }
 
-        fs.offset = FLASH_AREA_OFFSET(storage0);   
+        fs.offset = FLASH_AREA_OFFSET(storage);   
 		struct flash_pages_info info = {0,};
  
         if ((rc = flash_get_page_info_by_offs(flash_dev, fs.offset, &info))) {
@@ -66,20 +67,46 @@ void init_nvs ()
                 return;
         }
 
-        /* ADDRESS_ID is used to store an address, lets see if we can
-         * read it from flash, since we don't know the size read the
-         * maximum possible
-         */
-		char buf[16];
-        rc = nvs_read(&fs, ADDRESS_ID, &buf, sizeof(buf));
-        if (rc > 0) { /* item was found, show it */
-                printk("Id: %d, Address: %s", ADDRESS_ID, buf);
-        } else   {/* item was not found, add it */
-                strcpy(buf, "192.168.1.1");
-                printk("No address found, adding %s at id %d", buf,
-                       ADDRESS_ID);
-                (void)nvs_write(&fs, ADDRESS_ID, &buf, strlen(buf)+1);
-        }
+		//       /* RBT_CNT_ID is used to store the reboot counter, lets see
+        //  * if we can read it from flash
+        //  */
+		//          uint32_t reboot_counter = 0U, reboot_counter_his;
+
+        // rc = nvs_read(&fs, RBT_CNT_ID, &reboot_counter, sizeof(reboot_counter));
+        // if (rc > 0) { /* item was found, show it */
+        //         printk("Id: %d, Reboot_counter: %d\n",
+        //                 RBT_CNT_ID, reboot_counter);
+        // } else   {/* item was not found, add it */
+        //         printk("No Reboot counter found, adding it at id %d\n",
+        //                RBT_CNT_ID);
+        //         (void)nvs_write(&fs, RBT_CNT_ID, &reboot_counter,
+        //                   sizeof(reboot_counter));
+        // }
+        
+		// ++reboot_counter;
+		// nvs_write(&fs, RBT_CNT_ID, &reboot_counter, sizeof(reboot_counter));
+
+
+
+
+        // /* ADDRESS_ID is used to store an address, lets see if we can
+        //  * read it from flash, since we don't know the size read the
+        //  * maximum possible
+        //  */
+		// char buf[256];
+        // rc = nvs_read(&fs, ADDRESS_ID, &buf, sizeof(buf));
+        // if (rc > 0) { /* item was found, show it */
+        //         printk("Id: %d, Address: %s\n", ADDRESS_ID, buf);
+        // } else   {/* item was not found, add it */
+        //         strcpy(buf, "192.168.1.1");
+        //         printk("No address found, adding %s at id %d", buf,
+        //                ADDRESS_ID);
+        //         (void)nvs_write(&fs, ADDRESS_ID, &buf, strlen(buf)+1);
+        // }
+
+		// snprintf (buf, sizeof (buf), "192.168.1.%d-192.168.1.%d-192.168.1.%d-192.168.1.%d", reboot_counter, reboot_counter, reboot_counter, reboot_counter);
+        // nvs_write(&fs, ADDRESS_ID, &buf, strlen(buf)+1);
+
 }
 
 /*! \brief  Read byte from EEPROM.

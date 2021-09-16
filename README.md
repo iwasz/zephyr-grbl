@@ -66,7 +66,9 @@ Terminology:
 * [x] Zephyr PWM module was modified to accept a timer output compare ISR callback.
 * [x] AVR GPIO registers code ported to zephyr 
 * [x] Homing and limiters ported.
-* [ ] Probe implementation commented out.
+* [x] Probe implementation commented out.
+* [x] Control switches support commented out. I'll have an OLED display and I can add those features there.
+* [x] Spindle control commented out. 
 * [x] ~~Gpio inverting functionality stripped down as from now the Zephyr's device tree configuration is used for this.~~
 * ~~Logging ported to Zephyr.~~ Rolled back.
 * [x] Port uart code to zephyr.

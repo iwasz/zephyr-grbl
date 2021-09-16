@@ -11,14 +11,16 @@
 #include "zephyrGrblPeripherals.h"
 #include <disk/disk_access.h>
 // #include <ff.h>
-#include <fs/fs.h>
-#include <logging/log.h>
-#include <sys/byteorder.h>
-#include <zephyr.h>
-
 #include <drivers/gpio.h>
 #include <drivers/pwm.h>
 #include <drivers/spi.h>
+#include <fs/fs.h>
+#include <logging/log.h>
+#include <sys/byteorder.h>
+#include <sys/reboot.h>
+#include <zephyr.h>
+
+#include "eeprom.h"
 
 extern "C" int grblMain ();
 
@@ -41,8 +43,6 @@ static int lsdir (const char *path);
  *  in ffconf.h
  */
 static const char *disk_mount_pt = "/SD:";
-
-/****************************************************************************/
 
 /****************************************************************************/
 
@@ -150,20 +150,12 @@ void main ()
         }
 #endif
 
-        /*--------------------------------------------------------------------------*/
+        // init_nvs ();
+        // k_sleep (K_SECONDS (1));
+        // sys_reboot (0);
 
-        // gpio_pin_set (dirX, MOTOR1_DIR_PIN, false);
-        // gpio_pin_set (dirY, MOTOR2_DIR_PIN, false);
-
-        /*--------------------------------------------------------------------------*/
-
-        // pwm_set_update_callback (pwm, timer_update_callback);
-
-        // int ret = pwm_pin_set_usec (pwm, PWM_CHANNEL, PERIOD_USEC, 0, PWM_FLAGS);
-
-        // if (ret) {
-        //         LOG_ERR ("Error %d: failed to set pulse width\n", ret);
-        //         return;
+        // while (1) {
+        //         k_sleep (K_SECONDS (1));
         // }
 
         grblMain ();

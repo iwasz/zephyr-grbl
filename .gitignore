@@ -8,3 +8,6 @@ compile_commands.json
 *.elf
 *.DS_Store
 *.d
+_autosave-plotter.kicad_pcb
+fp-info-cache
+plotter-backups
