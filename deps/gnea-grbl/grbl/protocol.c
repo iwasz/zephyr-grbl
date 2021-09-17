@@ -151,6 +151,10 @@ void protocol_main_loop()
       }
     }
 
+    if (c == SERIAL_NO_DATA) {
+      k_msleep (10);
+    }
+
     // If there are no more characters in the serial read buffer to be processed and executed,
     // this indicates that g-code streaming has either filled the planner buffer or has
     // completed. In either case, auto-cycle start, if enabled, any queued moves.
@@ -232,6 +236,7 @@ void protocol_exec_rt_system()
         // the user and a GUI time to do what is needed before resetting, like killing the
         // incoming stream. The same could be said about soft limits. While the position is not
         // lost, continued streaming could cause a serious crash if by chance it gets executed.
+        k_msleep (1);
       } while (bit_isfalse(sys_rt_exec_state,EXEC_RESET));
     }
     system_clear_exec_alarm(); // Clear alarm
@@ -243,6 +248,7 @@ void protocol_exec_rt_system()
     // Execute system abort.
     if (rt_exec & EXEC_RESET) {
       sys.abort = true;  // Only place this is set true.
+      k_msleep (1);
       return; // Nothing else to do but exit.
     }
 
@@ -325,6 +331,7 @@ void protocol_exec_rt_system()
       }
 
       system_clear_exec_state_flag((EXEC_MOTION_CANCEL | EXEC_FEED_HOLD | EXEC_SAFETY_DOOR | EXEC_SLEEP));
+      k_msleep (1);
     }
 
     // Execute a cycle start by starting the stepper interrupt to begin executing the blocks in queue.
@@ -360,6 +367,7 @@ void protocol_exec_rt_system()
             } else { // Otherwise, do nothing. Set and resume IDLE state.
               sys.suspend = SUSPEND_DISABLE; // Break suspend state.
               sys.state = STATE_IDLE;
+              k_msleep(1);
             }
           }
         }
@@ -399,6 +407,7 @@ void protocol_exec_rt_system()
         }
       }
       system_clear_exec_state_flag(EXEC_CYCLE_STOP);
+      k_msleep (1);
     }
   }
 
@@ -428,6 +437,8 @@ void protocol_exec_rt_system()
       plan_update_velocity_profile_parameters();
       plan_cycle_reinitialize();
     }
+
+    k_msleep (1);
   }
 
   rt_exec = sys_rt_exec_accessory_override;
@@ -484,6 +495,8 @@ void protocol_exec_rt_system()
         gc_state.modal.coolant = coolant_state;
       }
     }
+
+    k_msleep (1);
   }
 
   #ifdef DEBUG
@@ -498,7 +511,8 @@ void protocol_exec_rt_system()
     st_prep_buffer();
   }
 
-        k_yield ();
+  // TODO replace with k_msleep (1) but only if there's nothing to do.
+  // k_yield ();
 }
 
 
@@ -545,6 +559,7 @@ static void protocol_exec_rt_suspend()
   #endif
 
   while (sys.suspend) {
+    k_msleep (1);
 
     if (sys.abort) { return; }
 

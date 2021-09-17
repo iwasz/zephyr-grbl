@@ -360,56 +360,56 @@ uint8_t system_check_travel_limits(float *target)
 // Special handlers for setting and clearing Grbl's real-time execution flags.
 void system_set_exec_state_flag (uint8_t mask)
 {
-        unsigned int l = irq_lock ();
+  unsigned int l = irq_lock ();
   sys_rt_exec_state |= (mask);
-        irq_unlock (l);
+  irq_unlock (l);
 }
 
 void system_clear_exec_state_flag (uint8_t mask)
 {
-        unsigned int l = irq_lock ();
+  unsigned int l = irq_lock ();
   sys_rt_exec_state &= ~(mask);
-        irq_unlock (l);
+  irq_unlock (l);
 }
 
 void system_set_exec_alarm (uint8_t code)
 {
-        unsigned int l = irq_lock ();
+  unsigned int l = irq_lock ();
   sys_rt_exec_alarm = code;
-        irq_unlock (l);
+  irq_unlock (l);
 }
 
 void system_clear_exec_alarm ()
 {
-        unsigned int l = irq_lock ();
+  unsigned int l = irq_lock ();
   sys_rt_exec_alarm = 0;
-        irq_unlock (l);
+  irq_unlock (l);
 }
 
 void system_set_exec_motion_override_flag (uint8_t mask)
 {
-        unsigned int l = irq_lock ();
+  unsigned int l = irq_lock ();
   sys_rt_exec_motion_override |= (mask);
-        irq_unlock (l);
+  irq_unlock (l);
 }
 
 void system_set_exec_accessory_override_flag (uint8_t mask)
 {
-        unsigned int l = irq_lock ();
+  unsigned int l = irq_lock ();
   sys_rt_exec_accessory_override |= (mask);
-        irq_unlock (l);
+  irq_unlock (l);
 }
 
 void system_clear_exec_motion_overrides ()
 {
-        unsigned int l = irq_lock ();
+  unsigned int l = irq_lock ();
   sys_rt_exec_motion_override = 0;
-        irq_unlock (l);
+  irq_unlock (l);
 }
 
 void system_clear_exec_accessory_overrides ()
 {
-        unsigned int l = irq_lock ();
+  unsigned int l = irq_lock ();
   sys_rt_exec_accessory_override = 0;
-        irq_unlock (l);
+  irq_unlock (l);
 }

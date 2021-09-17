@@ -122,7 +122,7 @@ void delay_sec(float seconds, uint8_t mode)
 		  if (sys.suspend & SUSPEND_RESTART_RETRACT) { return; } // Bail, if safety door reopens.
 		}
 
-                k_msleep (DWELL_TIME_STEP); // Delay DWELL_TIME_STEP increment
+    k_msleep (DWELL_TIME_STEP); // Delay DWELL_TIME_STEP increment
 	}
 }
 

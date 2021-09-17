@@ -87,11 +87,14 @@
       | Prusa i3 MK3 XY | 1A            | 6.5             | 200   | reference                     |
       | 17HS4401        | 1.5A          | 2.4             | 200   | popular, cheap, smooth        |
       After testing I'v decided to go with 17HS4401 as they prooven to perform smooth and silent.
-* [ ] Main IRQ should have higher priority than the logging and shell threads. It's the most important one! Thers no point of having it with the priority so low.
-* [ ] Make a custom board configuration.
+* [x] Make a custom board configuration.
 * [ ] Enable all the peripherals.
   * [ ] Enable OLED.
-* [ ] Refactor GRBL to threads to be able to print from the SD card and from the USB.
+* [ ] Refactor GRBL so that it can print from the SD card and from the USB.
+  * [ ] `serial_read` has to be abstracted-out. In the SD card scenario it has to return the next character from the selected file.
+  * [ ] Main IRQ should have higher priority than the logging and shell threads. It's the most important one! Thers no point of having it with the priority so low.
+  * [ ] Wrap *protocol.c*s `protocol_main_loop` in a thread. Priority higher than 14.
+  * [ ] Synchronize access to ring buffers in the serial.c (after adding the thread).
 * [ ] Implement the menu:
   * [ ] Print from file
     * [ ] List of files

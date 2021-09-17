@@ -359,7 +359,8 @@ static void limitSwitchPressed (const struct device *dev, struct gpio_callback *
                 limitPinState = limitPinStateBottom;
         }
 
-        k_timer_start (&limitSwitchDebounceTimer, K_MSEC (settings.homing_debounce_delay), K_NO_WAIT);
+        // k_timer_start (&limitSwitchDebounceTimer, K_MSEC (settings.homing_debounce_delay), K_NO_WAIT);
+        k_timer_start (&limitSwitchDebounceTimer, K_MSEC (32), K_NO_WAIT); // 32ms as stated somewhere above in the comment.
 #endif
 }
 
@@ -528,7 +529,7 @@ void limits_go_home(uint8_t cycle_mask)
     st_prep_buffer(); // Prep and fill segment buffer from newly planned block.
     st_wake_up(); // Initiate motion
     do {
-      k_yield ();
+      // k_yield ();
 
       if (approach) {
         // Check limit state. Lock out cycle axes when they change.
@@ -579,6 +580,10 @@ void limits_go_home(uint8_t cycle_mask)
       }
 
       st_prep_buffer(); // Check and prep segment buffer. NOTE: Should take no longer than 200us.
+      // This is my guess. If on AVR st_prep_buffer takes not more than 200µs, 
+      // then on Cortex M4 it will be faster. So I can afford additional 100µs 
+      // for other threads here.
+      k_usleep(100); 
 
       // Exit routines: No time to run protocol_execute_realtime() in this loop.
       if (sys_rt_exec_state & (EXEC_SAFETY_DOOR | EXEC_RESET | EXEC_CYCLE_STOP)) {

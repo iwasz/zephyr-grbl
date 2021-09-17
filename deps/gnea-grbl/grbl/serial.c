@@ -103,13 +103,13 @@ ISR(SERIAL_UDRE)
 // Fetches the first byte in the serial read buffer. Called by main program.
 uint8_t serial_read()
 {
-        uint8_t data;
+  uint8_t data;
 
-        if (ring_buf_get (&rxRingBuf, &data, 1) != 1) {
+  if (ring_buf_get (&rxRingBuf, &data, 1) != 1) {
     return SERIAL_NO_DATA;
-        }
+  }
 
-    return data;
+  return data;
 }
 
 
