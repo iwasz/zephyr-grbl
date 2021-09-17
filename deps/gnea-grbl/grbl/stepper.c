@@ -193,7 +193,7 @@ static void st_enable_motors (bool on)
 {
         gpio_pin_set (enableX, MOTORX_ENABLE_PIN, on);
         gpio_pin_set (enableY, MOTORY_ENABLE_PIN, on);
-        gpio_pin_set (enableZ, MOTORZ_ENABLE_PIN, on);
+        // gpio_pin_set (enableZ, MOTORZ_ENABLE_PIN, on);
 }
 
 /*    BLOCK VELOCITY PROFILE DEFINITION
@@ -628,11 +628,11 @@ void st_reset()
 
   gpio_pin_set (stepX, MOTORX_STEP_PIN, bit_istrue(settings.step_invert_mask,bit(0)));
   gpio_pin_set (stepY, MOTORY_STEP_PIN, bit_istrue(settings.step_invert_mask,bit(1)));
-  gpio_pin_set (stepZ, MOTORZ_STEP_PIN, bit_istrue(settings.step_invert_mask,bit(2)));
+  // gpio_pin_set (stepZ, MOTORZ_STEP_PIN, bit_istrue(settings.step_invert_mask,bit(2)));
 
   gpio_pin_set (dirX, MOTORX_DIR_PIN, bit_istrue(settings.dir_invert_mask,bit(0)));
   gpio_pin_set (dirY, MOTORY_DIR_PIN, bit_istrue(settings.dir_invert_mask,bit(1)));
-  gpio_pin_set (dirZ, MOTORZ_DIR_PIN, bit_istrue(settings.dir_invert_mask,bit(2)));
+  // gpio_pin_set (dirZ, MOTORZ_DIR_PIN, bit_istrue(settings.dir_invert_mask,bit(2)));
   
   #ifdef ENABLE_DUAL_AXIS
     st.dir_outbits_dual = dir_port_invert_mask_dual;

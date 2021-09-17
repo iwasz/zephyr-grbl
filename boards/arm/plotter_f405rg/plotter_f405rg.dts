@@ -1,0 +1,285 @@
+/dts-v1/;
+#include <st/f4/stm32f405Xg.dtsi>
+#include <st/f4/stm32f405rgtx-pinctrl.dtsi>
+
+/ {
+	model = "github.com/iwasz/zephyr-grbl control board";
+	compatible = "iwasz,stm32f405rg-plotter";
+
+	chosen {
+		zephyr,console = &usart2;
+		zephyr,shell-uart = &usart2;
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+		zephyr,code-partition = &slot0_partition;
+	};
+
+	// leds {
+		//     compatible = "gpio-leds";
+		//     green_led_2: led_2 {
+			//         gpios = <&gpioa 5 GPIO_ACTIVE_HIGH>;
+			//         label = "User LD2";
+		//     };
+	// };
+
+	// gpio_keys {
+		//     compatible = "gpio-keys";
+		//     user_button: button {
+			//         label = "User";
+			//         gpios = <&gpioc 13 GPIO_ACTIVE_LOW>;
+		//     };
+	// };
+
+	// aliases {
+		//     led0 = &green_led_2;
+		//     sw0 = &user_button;
+	// };
+
+	aliases {
+		// USed for communication between GRBL and the host computer.
+		grbluart = &cdc_acm;
+		grblpwm =  &red_pwm_led;
+	};
+
+	pwmleds { // TODO remove this, as this is not used. PWM parametrers are set at run time using pwm_pin_set_usec (pwm, PWM_CHANNEL, PERIOD_USEC, 0, PWM_FLAGS);
+		compatible = "pwm-leds";
+
+		red_pwm_led: red_pwm_led {
+			pwms = <&grbl_callback 1 4 PWM_POLARITY_NORMAL>;
+		};
+	};
+
+	motor1_pins { // Motor with the shorter cable.
+		compatible = "gpio-leds";
+
+		dir {
+			gpios = <&gpiob 5 GPIO_ACTIVE_HIGH>;
+			label = "Motor driver direction pin";
+		};
+
+		step {
+			gpios = <&gpiob 4 GPIO_ACTIVE_HIGH>;
+			label = "Motor driver step pin";
+		};
+
+		enable { // High state on CFG6 / EN pin turns off the curents completely. Thus Active low.
+			gpios = <&gpiob 3 GPIO_ACTIVE_LOW>;
+			label = "Enable the motor driver";
+		};
+
+		nss {
+			gpios = <&gpioc 0 GPIO_ACTIVE_HIGH>;
+			label = "SPI chip select";
+		};
+	};
+
+	motor2_pins { // With the longer cable.
+		compatible = "gpio-leds";
+
+		dir {
+			gpios = <&gpioc 13 GPIO_ACTIVE_LOW>;
+			label = "Motor 2 driver direction pin";
+		};
+
+		step {
+			gpios = <&gpioc 14 GPIO_ACTIVE_HIGH>;
+			label = "Motor 2 driver step pin";
+		};
+
+		enable {
+			gpios = <&gpioc 15 GPIO_ACTIVE_LOW>;
+			label = "Enable the motor 2 driver";
+		};
+
+		nss {
+			gpios = <&gpioc 1 GPIO_ACTIVE_HIGH>;
+			label = "SPI chip select for motor 2";
+		};
+	};
+
+	edge_switch_pins {
+		compatible = "gpio-keys";
+
+		left {
+			gpios = <&gpioa 0 (GPIO_ACTIVE_LOW| GPIO_PULL_UP)>;
+			label = "Edge switch on the left side (touching the west attachment)";
+		};
+
+		right {
+			gpios = <&gpioa 1 (GPIO_ACTIVE_LOW| GPIO_PULL_UP)>;
+			label = "Edge switch on the right side (touching the east attachment)";
+		};
+
+		top {
+			gpios = <&gpiob 12 (GPIO_ACTIVE_LOW| GPIO_PULL_UP)>;
+			label = "Edge switch on the top (touching the north attachment)";
+		};
+
+		bottom {
+			gpios = <&gpiob 2 (GPIO_ACTIVE_LOW| GPIO_PULL_UP)>;
+			label = "Edge switch on the bottom side (touching the pen holder)";
+		};
+
+		// motor1_stall { // Currently not used
+			//     gpios = <&gpioc 10 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			//     label = "Motor 1 stall diagnostic output. Detects when the motor stalls.";
+		// };
+
+		// motor2_stall { // Currently not used
+			//     gpios = <&gpioc 12 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			//     label = "Motor 2 stall diagnostic output. Detects when the motor stalls.";
+		// };
+	};
+};
+
+&usart2 {
+	pinctrl-0 = <&usart2_tx_pa2 &usart2_rx_pa3>;
+	current-speed = <115200>;
+	status = "okay";
+};
+
+&i2c1 {
+	pinctrl-0 = <&i2c1_scl_pb6 &i2c1_sda_pb7>;
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_FAST>;
+
+	ssd1306@3c {
+		compatible = "solomon,ssd1306fb";
+		reg = <0x3c>;
+		label = "SSD1306";
+		width = <128>;
+		height = <64>;
+		segment-offset = <0>;
+		page-offset = <0>;
+		display-offset = <0>;
+		multiplex-ratio = <63>;
+		segment-remap;
+		com-invdir;
+		prechargep = <0x22>;
+	};
+};
+
+// SPI interface for SDIO
+&spi1 {
+	pinctrl-0 = <&spi1_nss_pa4 &spi1_sck_pa5 &spi1_miso_pa6 &spi1_mosi_pa7>;
+	status = "okay";
+
+	sdhc0: sdhc@0 {
+		compatible = "zephyr,mmc-spi-slot";
+		reg = <0>;
+		status = "okay";
+		label = "SDHC0";
+		spi-max-frequency = <500000>;
+	};
+};
+
+// SPI interface for the motor controllers
+&spi2 {
+	status = "okay";
+	pinctrl-0 = <&spi2_sck_pb10 &spi2_mosi_pc3 &spi2_miso_pc2>;
+};
+
+&timers4 {
+	status = "okay";
+
+	axis_z: pwm {
+		status = "okay";
+		st,prescaler = <40>; // When CPU@168 MHz, timer2 gets 84MHz. So tim. period is ~31ms. 1/(84MHz/40)*65535
+		pinctrl-0 = <&tim4_ch3_pb8>;
+	};
+};
+
+&timers2 {// Timer2 as well as timer5 are 32 bit.
+	status = "okay";
+
+	/*
+	 * This node is defined as a child of timer node, becuase it references some properties
+	 * of its parent. In this particular case it needs an IRQ number. Look for DT_IRQ_BY_IDX(DT_PARENT (...))
+	 * in the code.
+	 */
+	grbl_callback: hw_timer {
+		compatible = "st,stm32-hw-timer";
+		status = "okay";
+		st,prescaler = <10>; // 168MHz -> 84MHz to timer, prescaled by 10 == 8.4MHz. So min period == 1/8.4M, max period == (1/8.4M)*2^32
+		label = "GRBL_CALLBACK";
+		#pwm-cells = <3>;
+	};
+};
+
+&clk_hsi {
+	status = "okay";
+};
+
+&pll {
+	div-m = <16>;
+	mul-n = <336>;
+	div-p = <2>;
+	div-q = <7>;  /* 336 / 7 = 48 ! */
+	clocks = <&clk_hsi>;
+	status = "okay";
+};
+
+&rcc {
+	clocks = <&pll>;
+	clock-frequency = <DT_FREQ_M(168)>;
+	ahb-prescaler = <1>;
+	apb1-prescaler = <4>;
+	apb2-prescaler = <2>;
+};
+
+zephyr_udc0: &usbotg_fs {
+	pinctrl-0 = <&usb_otg_fs_dm_pa11 &usb_otg_fs_dp_pa12>;
+	status = "okay";
+
+	cdc_acm: mcdc_acm_uart0 {
+		compatible = "zephyr,cdc-acm-uart";
+		label = "CDC_ACM_0";
+	};
+};
+
+&flash0 {
+
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		// Sectors 0 (16kB), 1 (16kB). Only 32kB for the MCUBoot
+		boot_partition: partition@0 {
+			label = "mcuboot";
+			reg = <0x00000000 0x00008000>;
+			read-only;
+		};
+
+		// Sectors 2 (16kB), 3 (16kB)
+		storage_partition: partition@8000 {
+			label = "storage";
+			reg = <0x00008000 0x00080000>;
+		};
+
+		// Sector 4 (64kB) Free.
+
+		// Sectors 5 (128kB), 6 (128kB) and 7 (128kB).
+		slot0_partition: partition@20000 {
+			label = "image-0";
+			reg = <0x00020000 0x00060000>;
+		};
+
+		// Sectors 8 (128kB), 9 (128kB) and 10 (128kB).
+		slot1_partition: partition@40000 {
+			label = "image-1";
+			reg = <0x00080000 0x00060000>;
+		};
+
+		// Sector 11(128kB) Free
+
+		// scratch_partition: partition@60000 {
+			//     label = "image-scratch";
+			//     reg = <0x00080000 0x00020000>;
+		// };
+	};
+};
+
+&backup_sram {
+	status = "okay";
+};

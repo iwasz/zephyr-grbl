@@ -6,7 +6,8 @@
 * [ ] Implement printing from a SD card.
 
 # Hardware
-* Make a sutout for 17HS4401's cable supporting protrusion. 
+* [ ] Make a cutout for 17HS4401's cable supporting protrusion. 
+* [ ] Make some marking showing where is the origin of the coordinate system. This is to show to the user where to place a sheet of paper.
 * Kareta
   * [ ] Wytłoczenia na łożyska w karecie. Kiedy się ją skręci, łożyska się nie kręca kiedy się skręci mocno karetę.
   * [ ] Problem z kablami. Albo wywalić switche, albo jakoś to poprawić.
@@ -54,7 +55,8 @@
   * [x] Rollback formating done by my clang-format for easier diff'ing.
 * [x] Rollback my earlier changes that deleted the inversion implementation in GRBL. 
 * [ ] Settings to NVM.
-  * [ ] MCUboot has to be installed in order to flash partitions to work at all. 
+  * [x] MCUboot has to be installed in order to flash partitions to work at all. 
+
   | name            | EEPROM addr | notes                                                                |
   | --------------- | ----------- | -------------------------------------------------------------------- |
   | version         | 0           | 10                                                                   |
@@ -75,7 +77,7 @@
   * [ ] `settings.pulse_microseconds` is set, but it is not of any use, because there is no *output compare* callback set. It can't even be set right now.
   * [ ] The plotter is slightly slower than the desired feed rate (~25%).
   * [ ] When set to very low feed rate, the movement is jerky. For instance when feed rate is 1 mm/min the carret advances a fraction of a mm, and then stops, and repeats. Ticking sound can be heard.
-    * [x] Ahhh I spent a day on this. It seems that : 1. I TMC2130 works best with 24V instead of 12. When feed from 12V, the back EMF to input signal is to high (compared to 12V supply signal driving the coils), and TMC drivers get confused. 2. (more importantly) my motors are somehow unsuitable for the TMC2130. I don't understand this, but it has something to do with the current and coil resistance. 
+    * [x] Ahhh I spent a day on this. It seems that : 1. [TMC2130 works best with 24V instead of 12](https://forum.prusaprinters.org/forum/original-prusa-i3-mk3s-mk3-hardware-firmware-and-software-help/tmc2130-driver-infos-and-modifications/). When feed from 12V, the back EMF to input signal is to high (compared to 12V supply signal driving the coils), and TMC drivers get confused. 2. (more importantly) my motors are somehow unsuitable for the TMC2130. I don't understand this, but it has something to do with the current and coil resistance. 
   
       | Model           | rated current | coil resistance | steps | notes                         |
       | --------------- | ------------- | --------------- | ----- | ----------------------------- |
@@ -86,3 +88,16 @@
       | 17HS4401        | 1.5A          | 2.4             | 200   | popular, cheap, smooth        |
       After testing I'v decided to go with 17HS4401 as they prooven to perform smooth and silent.
 * [ ] Main IRQ should have higher priority than the logging and shell threads. It's the most important one! Thers no point of having it with the priority so low.
+* [ ] Make a custom board configuration.
+* [ ] Enable all the peripherals.
+  * [ ] Enable OLED.
+* [ ] Refactor GRBL to threads to be able to print from the SD card and from the USB.
+* [ ] Implement the menu:
+  * [ ] Print from file
+    * [ ] List of files
+  * [ ] GRBL command buttons (as a menu).
+    * [ ] Feed hold
+    * [ ] Cycle start
+    * [ ] Reset
+* [ ] Possibly implement (I mean anable in the MCUBoot) the DFU over USB.
+* [ ] Some recent changes caused that shell reacts on every second keypress only. It happened about when I worked on MCUBoot.

@@ -1,0 +1,3 @@
+config BOARD_PLOTTER_F405RG
+	bool "zephyr-grbl-plotter controller board"
+	depends on SOC_STM32F405XG

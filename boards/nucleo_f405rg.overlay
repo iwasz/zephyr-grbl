@@ -1,0 +1,225 @@
+/ {
+	aliases {
+		// USed for communication between GRBL and the host computer.
+		grbluart = &cdc_acm;
+		grblpwm =  &red_pwm_led;
+	};
+
+	pwmleds { // TODO remove this, as this is not used. PWM parametrers are set at run time using pwm_pin_set_usec (pwm, PWM_CHANNEL, PERIOD_USEC, 0, PWM_FLAGS);
+		compatible = "pwm-leds";
+
+		red_pwm_led: red_pwm_led {
+			pwms = <&grbl_callback 1 4 PWM_POLARITY_NORMAL>;
+		};
+	};
+
+	chosen {
+		zephyr,code-partition = &slot0_partition;
+	};
+
+	motor1_pins { // Motor with the shorter cable.
+		compatible = "gpio-leds";
+
+		dir {
+			gpios = <&gpioa 0 GPIO_ACTIVE_HIGH>;
+			label = "Motor driver direction pin";
+		};
+
+		step {
+			gpios = <&gpioa 1 GPIO_ACTIVE_HIGH>;
+			label = "Motor driver step pin";
+		};
+
+		enable { // High state on CFG6 / EN pin turns off the curents completely. Thus Active low.
+			gpios = <&gpiob 1 GPIO_ACTIVE_LOW>;
+			label = "Enable the motor driver";
+		};
+
+		nss {
+			gpios = <&gpiob 0 GPIO_ACTIVE_HIGH>;
+			label = "SPI chip select";
+		};
+	};
+
+	motor2_pins { // With the longer cable.
+		compatible = "gpio-leds";
+
+		dir {
+			gpios = <&gpioc 1 GPIO_ACTIVE_LOW>;
+			label = "Motor 2 driver direction pin";
+		};
+
+		step {
+			gpios = <&gpioc 0 GPIO_ACTIVE_HIGH>;
+			label = "Motor 2 driver step pin";
+		};
+
+		enable {
+			gpios = <&gpioc 8 GPIO_ACTIVE_LOW>;
+			label = "Enable the motor 2 driver";
+		};
+
+		nss {
+			gpios = <&gpioc 6 GPIO_ACTIVE_HIGH>;
+			label = "SPI chip select for motor 2";
+		};
+	};
+
+	motorz_pins { // Currently not used
+		compatible = "gpio-leds";
+
+		dir {
+			gpios = <&gpioe 10 GPIO_ACTIVE_HIGH>;
+			label = "Motor 3 driver direction pin";
+		};
+
+		step {
+			gpios = <&gpioe 12 GPIO_ACTIVE_HIGH>;
+			label = "Motor 3 driver step pin";
+		};
+
+		enable {
+			gpios = <&gpioe 14 GPIO_ACTIVE_LOW>;
+			label = "Enable the motor 3 driver";
+		};
+
+		nss {
+			gpios = <&gpioe 15 GPIO_ACTIVE_HIGH>;
+			label = "SPI chip select for motor 3";
+		};
+	};
+
+	edge_switch_pins {
+		compatible = "gpio-keys";
+
+		left {// Something wrong with this one
+			gpios = <&gpiob 7 (GPIO_ACTIVE_LOW| GPIO_PULL_UP)>;
+			label = "Edge switch on the left side (touching the west attachment)";
+		};
+
+		right {
+			gpios = <&gpioa 15 (GPIO_ACTIVE_LOW| GPIO_PULL_UP)>;
+			label = "Edge switch on the right side (touching the east attachment)";
+		};
+
+		top {
+			gpios = <&gpiob 3 (GPIO_ACTIVE_LOW| GPIO_PULL_UP)>;
+			label = "Edge switch on the top (touching the north attachment)";
+		};
+
+		bottom {
+			gpios = <&gpioc 11 (GPIO_ACTIVE_LOW| GPIO_PULL_UP)>;
+			label = "Edge switch on the bottom side (touching the pen holder)";
+		};
+
+		motor1_stall { // Currently not used
+			gpios = <&gpioc 10 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			label = "Motor 1 stall diagnostic output. Detects when the motor stalls.";
+		};
+
+		motor2_stall { // Currently not used
+			gpios = <&gpioc 12 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			label = "Motor 2 stall diagnostic output. Detects when the motor stalls.";
+		};
+	};
+};
+
+&i2c1 {
+	status = "disabled";
+};
+
+&i2c2 {
+	status = "disabled";
+};
+
+// SPI interface for SDIO
+&spi2 {
+	status = "okay";
+	pinctrl-0 = <&spi2_sck_pb10 &spi2_mosi_pc3 &spi2_miso_pc2 &spi2_nss_pb12>;
+
+	sdhc0: sdhc@0 {
+		compatible = "zephyr,mmc-spi-slot";
+		reg = <0>;
+		status = "okay";
+		label = "SDHC0";
+		spi-max-frequency = <500000>;
+	};
+};
+
+&timers4 {
+	status = "okay";
+
+	axis_z: pwm {
+		status = "okay";
+		st,prescaler = <40>; // When CPU@168 MHz, timer2 gets 84MHz. So tim. period is ~31ms. 1/(84MHz/40)*65535
+		pinctrl-0 = <&tim4_ch3_pb8>;
+	};
+};
+
+&timers2 {// Timer2 as well as timer5 are 32 bit.
+	status = "okay";
+
+	/*
+	 * This node is defined as a child of timer node, becuase it references some properties
+	 * of its parent. In this particular case it needs an IRQ number. Look for DT_IRQ_BY_IDX(DT_PARENT (...))
+	 * in the code.
+	 */
+	grbl_callback: hw_timer {
+		compatible = "st,stm32-hw-timer";
+		status = "okay";
+		st,prescaler = <10>; // 168MHz -> 84MHz to timer, prescaled by 10 == 8.4MHz. So min period == 1/8.4M, max period == (1/8.4M)*2^32
+		label = "GRBL_CALLBACK";
+		#pwm-cells = <3>;
+	};
+};
+
+&clk_hsi {
+	status = "okay";
+};
+
+&pll {
+	div-m = <16>;
+	mul-n = <336>;
+	div-p = <2>;
+	div-q = <7>;  /* 336 / 7 = 48 ! */
+	clocks = <&clk_hsi>;
+	status = "okay";
+};
+
+&rcc {
+	clocks = <&pll>;
+	clock-frequency = <DT_FREQ_M(168)>;
+	ahb-prescaler = <1>;
+	apb1-prescaler = <4>;
+	apb2-prescaler = <2>;
+};
+
+zephyr_udc0: &usbotg_fs {
+	pinctrl-0 = <&usb_otg_fs_dm_pa11 &usb_otg_fs_dp_pa12>;
+	status = "okay";
+
+	cdc_acm: mcdc_acm_uart0 {
+		compatible = "zephyr,cdc-acm-uart";
+		label = "CDC_ACM_0";
+	};
+};
+
+// &flash0 {
+
+	//     partitions {
+		//         compatible = "fixed-partitions";
+		//         #address-cells = <1>;
+		//         #size-cells = <1>;
+
+		//         boot_partition: partition@0 {
+			//             label = "mcuboot";
+			//             reg = <0x00000000 0x00008000>;
+			//             read-only;
+		//         };
+
+		//         storage0_partition: partition@8000 {
+			//             label = "storage0";
+			//             reg = <0x00008000 0x0008000>;
+		//         };
+	//     };
+// };

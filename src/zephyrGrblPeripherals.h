@@ -42,11 +42,6 @@
 #define MOTORX_NSS_PIN DT_GPIO_PIN (MOTORX_NSS_NODE, gpios)
 #define MOTORX_NSS_FLAGS DT_GPIO_FLAGS (MOTORX_NSS_NODE, gpios)
 
-#define MOTORX_STALL_NODE DT_PATH (edge_switch_pins, motor1_stall)
-#define MOTORX_STALL_LABEL DT_GPIO_LABEL (MOTORX_STALL_NODE, gpios)
-#define MOTORX_STALL_PIN DT_GPIO_PIN (MOTORX_STALL_NODE, gpios)
-#define MOTORX_STALL_FLAGS DT_GPIO_FLAGS (MOTORX_STALL_NODE, gpios)
-
 /*--------------------------------------------------------------------------*/
 
 #define MOTORY_DIR_NODE DT_PATH (motor2_pins, dir)
@@ -68,28 +63,6 @@
 #define MOTORY_NSS_LABEL DT_GPIO_LABEL (MOTORY_NSS_NODE, gpios)
 #define MOTORY_NSS_PIN DT_GPIO_PIN (MOTORY_NSS_NODE, gpios)
 #define MOTORY_NSS_FLAGS DT_GPIO_FLAGS (MOTORY_NSS_NODE, gpios)
-
-#define MOTORY_STALL_NODE DT_PATH (edge_switch_pins, motor2_stall)
-#define MOTORY_STALL_LABEL DT_GPIO_LABEL (MOTORY_STALL_NODE, gpios)
-#define MOTORY_STALL_PIN DT_GPIO_PIN (MOTORY_STALL_NODE, gpios)
-#define MOTORY_STALL_FLAGS DT_GPIO_FLAGS (MOTORY_STALL_NODE, gpios)
-
-/*--------------------------------------------------------------------------*/
-
-#define MOTORZ_DIR_NODE DT_PATH (motorz_pins, dir)
-#define MOTORZ_DIR_LABEL DT_GPIO_LABEL (MOTORZ_DIR_NODE, gpios)
-#define MOTORZ_DIR_PIN DT_GPIO_PIN (MOTORZ_DIR_NODE, gpios)
-#define MOTORZ_DIR_FLAGS DT_GPIO_FLAGS (MOTORZ_DIR_NODE, gpios)
-
-#define MOTORZ_STEP_NODE DT_PATH (motorz_pins, step)
-#define MOTORZ_STEP_LABEL DT_GPIO_LABEL (MOTORZ_STEP_NODE, gpios)
-#define MOTORZ_STEP_PIN DT_GPIO_PIN (MOTORZ_STEP_NODE, gpios)
-#define MOTORZ_STEP_FLAGS DT_GPIO_FLAGS (MOTORZ_STEP_NODE, gpios)
-
-#define MOTORZ_ENABLE_NODE DT_PATH (motorz_pins, enable)
-#define MOTORZ_ENABLE_LABEL DT_GPIO_LABEL (MOTORZ_ENABLE_NODE, gpios)
-#define MOTORZ_ENABLE_PIN DT_GPIO_PIN (MOTORZ_ENABLE_NODE, gpios)
-#define MOTORZ_ENABLE_FLAGS DT_GPIO_FLAGS (MOTORZ_ENABLE_NODE, gpios)
 
 /*--------------------------------------------------------------------------*/
 

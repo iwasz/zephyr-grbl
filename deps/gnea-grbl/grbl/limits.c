@@ -63,8 +63,6 @@ const struct device *leftSwitch;
 const struct device *rightSwitch;
 const struct device *topSwitch;
 const struct device *bottomSwitch;
-const struct device *motor1Stall;
-const struct device *motor2Stall;
 
 struct gpio_callback buttonCbDataLeft;
 struct gpio_callback buttonCbDataRight;
@@ -147,7 +145,7 @@ void limits_init()
 
         if ((ret = gpio_pin_interrupt_configure (topSwitch, SWITCH_TOP_PIN, GPIO_INT_EDGE_TO_ACTIVE)) != 0) {
                 LOG_ERR ("Error %d: topSwitch interrupt", ret);
-                return;
+                return; 
         }
 
         /*--------------------------------------------------------------------------*/
@@ -169,37 +167,6 @@ void limits_init()
 
         /*--------------------------------------------------------------------------*/
 
-        if ((motor1Stall = device_get_binding (MOTORX_STALL_LABEL)) == NULL) {
-                LOG_ERR ("motor1Stall == NULL");
-                return;
-        }
-
-        if ((ret = gpio_pin_configure (motor1Stall, MOTORX_STALL_PIN, GPIO_INPUT | MOTORX_STALL_FLAGS)) < 0) {
-                LOG_ERR ("motor1Stall configure fail %d", ret);
-                return;
-        }
-
-        if ((ret = gpio_pin_interrupt_configure (motor1Stall, MOTORX_STALL_PIN, GPIO_INT_EDGE_TO_ACTIVE)) != 0) {
-                LOG_ERR ("Error %d: motor1Stall interrupt", ret);
-                return;
-        }
-
-        /*--------------------------------------------------------------------------*/
-
-        if ((motor2Stall = device_get_binding (MOTORY_STALL_LABEL)) == NULL) {
-                LOG_ERR ("motor2Stall == NULL");
-                return;
-        }
-
-        if ((ret = gpio_pin_configure (motor2Stall, MOTORY_STALL_PIN, GPIO_INPUT | MOTORY_STALL_FLAGS)) < 0) {
-                LOG_ERR ("motor2Stall configure fail %d", ret);
-                return;
-        }
-
-        if ((ret = gpio_pin_interrupt_configure (motor2Stall, MOTORY_STALL_PIN, GPIO_INT_EDGE_TO_ACTIVE)) != 0) {
-                LOG_ERR ("Error %d: motor2Stall interrupt", ret);
-                return;
-        }
 
   /*
   if (bit_istrue(settings.flags,BITFLAG_HARD_LIMIT_ENABLE)) {

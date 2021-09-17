@@ -172,29 +172,6 @@ void mcuPeripheralsInit ()
 
         /*--------------------------------------------------------------------------*/
 
-        dirZ = device_get_binding (MOTORZ_DIR_LABEL);
-
-        if (dirZ == NULL || gpio_pin_configure (dirZ, MOTORZ_DIR_PIN, GPIO_OUTPUT_ACTIVE | MOTORZ_DIR_FLAGS) < 0) {
-                LOG_ERR ("dirZ pin configuration error");
-                return;
-        }
-
-        stepZ = device_get_binding (MOTORZ_STEP_LABEL);
-
-        if (stepZ == NULL || gpio_pin_configure (stepZ, MOTORZ_STEP_PIN, GPIO_OUTPUT_ACTIVE | MOTORZ_STEP_FLAGS) < 0) {
-                LOG_ERR ("stepZ pin configuration error");
-                return;
-        }
-
-        enableZ = device_get_binding (MOTORZ_ENABLE_LABEL);
-
-        if (enableZ == NULL || gpio_pin_configure (enableZ, MOTORZ_ENABLE_PIN, GPIO_OUTPUT_ACTIVE | MOTORZ_ENABLE_FLAGS) < 0) {
-                LOG_ERR ("enableZ pin configuration error");
-                return;
-        }
-
-        /*--------------------------------------------------------------------------*/
-
         if (!DT_NODE_EXISTS (DT_NODELABEL (grbl_callback))) {
                 // Nie istnieje
         }
