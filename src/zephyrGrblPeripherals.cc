@@ -20,24 +20,10 @@ const struct device *stepY{};
 const struct device *enableY{};
 const struct device *nssY{};
 
-const struct device *dirZ{};
-const struct device *stepZ{};
-const struct device *enableZ{};
-const struct device *nssZ{};
-
-#ifdef ENABLE_DUAL_AXIS
-const struct device *dirXdual{};
-const struct device *stepXdual{};
-const struct device *enableXdual{};
-
-const struct device *dirYdual{};
-const struct device *stepYdual{};
-const struct device *enableYdual{};
-
-const struct device *dirZdual{};
-const struct device *stepZdual{};
-const struct device *enableZdual{};
-#endif
+// const struct device *dirZ{};
+// const struct device *stepZ{};
+// const struct device *enableZ{};
+// const struct device *nssZ{};
 
 const device *spi{};
 const device *timerCallbackDevice{};
@@ -49,7 +35,7 @@ const device *zAxisPwm{};
 void mcuPeripheralsInit ()
 {
         int ret{};
-        spi = device_get_binding (DT_LABEL (DT_NODELABEL (spi1)));
+        spi = device_get_binding (DT_LABEL (DT_ALIAS (motorspi)));
 
         if (!spi) {
                 printk ("Could not find SPI driver\n");
@@ -189,7 +175,7 @@ void mcuPeripheralsInit ()
 
         /*--------------------------------------------------------------------------*/
 
-        zAxisPwm = device_get_binding (DT_PROP (DT_NODELABEL (axis_z), label));
+        zAxisPwm = device_get_binding (DT_PROP (DT_ALIAS (servopwm), label));
 
         if (!zAxisPwm) {
                 LOG_ERR ("No axis Z PWM device.");

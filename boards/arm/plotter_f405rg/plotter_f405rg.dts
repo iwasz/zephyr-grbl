@@ -14,31 +14,14 @@
 		zephyr,code-partition = &slot0_partition;
 	};
 
-	// leds {
-		//     compatible = "gpio-leds";
-		//     green_led_2: led_2 {
-			//         gpios = <&gpioa 5 GPIO_ACTIVE_HIGH>;
-			//         label = "User LD2";
-		//     };
-	// };
-
-	// gpio_keys {
-		//     compatible = "gpio-keys";
-		//     user_button: button {
-			//         label = "User";
-			//         gpios = <&gpioc 13 GPIO_ACTIVE_LOW>;
-		//     };
-	// };
-
-	// aliases {
-		//     led0 = &green_led_2;
-		//     sw0 = &user_button;
-	// };
-
 	aliases {
 		// USed for communication between GRBL and the host computer.
 		grbluart = &cdc_acm;
 		grblpwm =  &red_pwm_led;
+		servopwm = &timer4_pwm;
+		motorspi = &spi2;
+		sdcardspi = &spi1;
+		displayi2c = &i2c1;
 	};
 
 	pwmleds { // TODO remove this, as this is not used. PWM parametrers are set at run time using pwm_pin_set_usec (pwm, PWM_CHANNEL, PERIOD_USEC, 0, PWM_FLAGS);
@@ -53,7 +36,7 @@
 		compatible = "gpio-leds";
 
 		dir {
-			gpios = <&gpiob 5 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpiob 5 GPIO_ACTIVE_LOW>;
 			label = "Motor driver direction pin";
 		};
 
@@ -76,18 +59,20 @@
 	motor2_pins { // With the longer cable.
 		compatible = "gpio-leds";
 
-		dir {
-			gpios = <&gpioc 13 GPIO_ACTIVE_LOW>;
+		dir { // Warning! PC13 is connected to the blue pushbutton on nucleos!
+			gpios = <&gpioc 13 GPIO_ACTIVE_HIGH>;
 			label = "Motor 2 driver direction pin";
 		};
 
-		step {
-			gpios = <&gpioc 14 GPIO_ACTIVE_HIGH>;
+		step { // Warning! PC14 and PC15 are connected to the LSE crystal on nucleos.
+			// gpios = <&gpioc 14 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpioc 11 GPIO_ACTIVE_HIGH>; // Nucleo
 			label = "Motor 2 driver step pin";
 		};
 
 		enable {
-			gpios = <&gpioc 15 GPIO_ACTIVE_LOW>;
+			// gpios = <&gpioc 15 GPIO_ACTIVE_LOW>; // Target board
+			gpios = <&gpioc 12 GPIO_ACTIVE_LOW>; // Nucleo
 			label = "Enable the motor 2 driver";
 		};
 
@@ -182,7 +167,7 @@
 &timers4 {
 	status = "okay";
 
-	axis_z: pwm {
+	timer4_pwm: pwm {
 		status = "okay";
 		st,prescaler = <40>; // When CPU@168 MHz, timer2 gets 84MHz. So tim. period is ~31ms. 1/(84MHz/40)*65535
 		pinctrl-0 = <&tim4_ch3_pb8>;

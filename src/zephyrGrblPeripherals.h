@@ -20,8 +20,6 @@
 
 /*--------------------------------------------------------------------------*/
 
-// TODO change names from MOTOR1 to MOTORX etc
-// TODO this sort of defines were originally defined in grbl's cpu_map.h. There's still some left there.
 #define MOTORX_DIR_NODE DT_PATH (motor1_pins, dir)
 #define MOTORX_DIR_LABEL DT_GPIO_LABEL (MOTORX_DIR_NODE, gpios)
 #define MOTORX_DIR_PIN DT_GPIO_PIN (MOTORX_DIR_NODE, gpios)
