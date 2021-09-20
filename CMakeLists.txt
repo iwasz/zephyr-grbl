@@ -15,41 +15,42 @@ include_directories (deps/etl/include/)
 include_directories (deps/gsl-lite/include)
 include_directories (deps/gnea-grbl/grbl)
 
+# Used in GRBL's defaults.h
 add_definitions("-DDEFAULTS_ZEPHYR_GRBL_PLOTTER")
 
 target_sources(app PRIVATE 
     src/main.cc
-    src/zephyrGrblPeripherals.cc
-    src/stepperDriverSettings.cc
+    # src/zephyrGrblPeripherals.cc
+    # src/stepperDriverSettings.cc
 
     # deps/TMC2130Stepper/src/source/SW_SPI.cpp
-    deps/TMC2130Stepper/src/source/TMC2130Stepper_CHOPCONF.cpp
-    deps/TMC2130Stepper/src/source/TMC2130Stepper_COOLCONF.cpp
-    deps/TMC2130Stepper/src/source/TMC2130Stepper_DRV_STATUS.cpp
-    deps/TMC2130Stepper/src/source/TMC2130Stepper_GCONF.cpp
-    deps/TMC2130Stepper/src/source/TMC2130Stepper_IHOLD_IRUN.cpp
-    deps/TMC2130Stepper/src/source/TMC2130Stepper_MACROS.h
-    deps/TMC2130Stepper/src/source/TMC2130Stepper_PWMCONF.cpp
-    deps/TMC2130Stepper/src/source/TMC2130Stepper.cpp
+    # deps/TMC2130Stepper/src/source/TMC2130Stepper_CHOPCONF.cpp
+    # deps/TMC2130Stepper/src/source/TMC2130Stepper_COOLCONF.cpp
+    # deps/TMC2130Stepper/src/source/TMC2130Stepper_DRV_STATUS.cpp
+    # deps/TMC2130Stepper/src/source/TMC2130Stepper_GCONF.cpp
+    # deps/TMC2130Stepper/src/source/TMC2130Stepper_IHOLD_IRUN.cpp
+    # deps/TMC2130Stepper/src/source/TMC2130Stepper_MACROS.h
+    # deps/TMC2130Stepper/src/source/TMC2130Stepper_PWMCONF.cpp
+    # deps/TMC2130Stepper/src/source/TMC2130Stepper.cpp
 
-    deps/gnea-grbl/grbl/coolant_control.c
-    deps/gnea-grbl/grbl/eeprom.c    
-    deps/gnea-grbl/grbl/gcode.c
-    deps/gnea-grbl/grbl/jog.c
-    deps/gnea-grbl/grbl/limits.c        
-    deps/gnea-grbl/grbl/main.c
-    deps/gnea-grbl/grbl/motion_control.c
-    deps/gnea-grbl/grbl/nuts_bolts.c
-    deps/gnea-grbl/grbl/planner.c
-    deps/gnea-grbl/grbl/print.c
-    deps/gnea-grbl/grbl/probe.c
-    deps/gnea-grbl/grbl/protocol.c
-    deps/gnea-grbl/grbl/report.c   
-    deps/gnea-grbl/grbl/serial.c
-    deps/gnea-grbl/grbl/settings.c
-    deps/gnea-grbl/grbl/spindle_control.c
-    deps/gnea-grbl/grbl/stepper.c
-    deps/gnea-grbl/grbl/system.c
+    # deps/gnea-grbl/grbl/coolant_control.c
+    # deps/gnea-grbl/grbl/eeprom.c    
+    # deps/gnea-grbl/grbl/gcode.c
+    # deps/gnea-grbl/grbl/jog.c
+    # deps/gnea-grbl/grbl/limits.c        
+    # deps/gnea-grbl/grbl/main.c
+    # deps/gnea-grbl/grbl/motion_control.c
+    # deps/gnea-grbl/grbl/nuts_bolts.c
+    # deps/gnea-grbl/grbl/planner.c
+    # deps/gnea-grbl/grbl/print.c
+    # deps/gnea-grbl/grbl/probe.c
+    # deps/gnea-grbl/grbl/protocol.c
+    # deps/gnea-grbl/grbl/report.c   
+    # deps/gnea-grbl/grbl/serial.c
+    # deps/gnea-grbl/grbl/settings.c
+    # deps/gnea-grbl/grbl/spindle_control.c
+    # deps/gnea-grbl/grbl/stepper.c
+    # deps/gnea-grbl/grbl/system.c
 )
 
 set(gen_dir ${ZEPHYR_BINARY_DIR}/include/generated/)
