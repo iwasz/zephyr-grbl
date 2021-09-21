@@ -6,23 +6,23 @@
  *  ~~~~~~~~~                                                               *
  ****************************************************************************/
 
-// #include "hw_timer.h"
-// #include "stepperDriverSettings.h"
-// #include "zephyrGrblPeripherals.h"
-// #include <disk/disk_access.h>
-// // #include <ff.h>
-// #include <drivers/gpio.h>
-// #include <drivers/pwm.h>
-// #include <drivers/spi.h>
-// #include <fs/fs.h>
+#include "hw_timer.h"
+#include "stepperDriverSettings.h"
+#include "zephyrGrblPeripherals.h"
+#include <disk/disk_access.h>
+// #include <ff.h>
+#include <drivers/gpio.h>
+#include <drivers/pwm.h>
+#include <drivers/spi.h>
+#include <fs/fs.h>
 #include <logging/log.h>
-// #include <sys/byteorder.h>
-// #include <sys/reboot.h>
+#include <sys/byteorder.h>
+#include <sys/reboot.h>
 #include <zephyr.h>
 
-// #include "eeprom.h"
+#include "eeprom.h"
 
-// extern "C" int grblMain ();
+extern "C" int grblMain ();
 
 /****************************************************************************/
 
@@ -46,43 +46,43 @@ static const char *disk_mount_pt = "/SD:";
 
 /****************************************************************************/
 
-// static int lsdir (const char *path)
-// {
-//         int res;
-//         struct fs_dir_t dirp;
-//         static struct fs_dirent entry;
+static int lsdir (const char *path)
+{
+        int res;
+        struct fs_dir_t dirp;
+        static struct fs_dirent entry;
 
-//         /* Verify fs_opendir() */
-//         res = fs_opendir (&dirp, path);
-//         if (res) {
-//                 LOG_ERR ("Error opening dir %s [%d]\n", path, res);
-//                 return res;
-//         }
+        /* Verify fs_opendir() */
+        res = fs_opendir (&dirp, path);
+        if (res) {
+                LOG_ERR ("Error opening dir %s [%d]\n", path, res);
+                return res;
+        }
 
-//         LOG_INF ("\nListing dir %s ...\n", path);
+        LOG_INF ("\nListing dir %s ...\n", path);
 
-//         for (;;) {
-//                 /* Verify fs_readdir() */
-//                 res = fs_readdir (&dirp, &entry);
+        for (;;) {
+                /* Verify fs_readdir() */
+                res = fs_readdir (&dirp, &entry);
 
-//                 /* entry.name[0] == 0 means end-of-dir */
-//                 if (res || entry.name[0] == 0) {
-//                         break;
-//                 }
+                /* entry.name[0] == 0 means end-of-dir */
+                if (res || entry.name[0] == 0) {
+                        break;
+                }
 
-//                 if (entry.type == FS_DIR_ENTRY_DIR) {
-//                         LOG_INF ("[DIR ] %s\n", entry.name);
-//                 }
-//                 else {
-//                         LOG_INF ("[FILE] %s (size = %zu)\n", entry.name, entry.size);
-//                 }
-//         }
+                if (entry.type == FS_DIR_ENTRY_DIR) {
+                        LOG_INF ("[DIR ] %s\n", entry.name);
+                }
+                else {
+                        LOG_INF ("[FILE] %s (size = %zu)\n", entry.name, entry.size);
+                }
+        }
 
-//         /* Verify fs_closedir() */
-//         fs_closedir (&dirp);
+        /* Verify fs_closedir() */
+        fs_closedir (&dirp);
 
-//         return res;
-// }
+        return res;
+}
 
 // #define PERIOD_USEC 500U
 // #define NUM_STEPS 50U
@@ -102,15 +102,25 @@ static const char *disk_mount_pt = "/SD:";
 const struct device *dev;
 
 // static void user_entry (void *p1, void *p2, void *p3) { hw_timer_print (dev); }
+void my_entry_point (void *, void *, void *)
+{
+
+        while (true) {
+                printk ("#");
+                k_sleep (K_SECONDS (1));
+        }
+}
+
+constexpr int SD_CARD_STACK_SIZE = 1024;
+constexpr int SD_CARD_PRIORITY = 13;
+
+K_THREAD_DEFINE (sdcard, SD_CARD_STACK_SIZE, my_entry_point, NULL, NULL, NULL, SD_CARD_PRIORITY, 0, 0);
 
 void main ()
 {
-        while (true) {
-                k_sleep (K_MSEC (10));
-        }
 
-        // mcuPeripheralsInit ();
-        // drv::init ();
+        mcuPeripheralsInit ();
+        drv::init ();
 
 #if 0
         /* raw disk i/o */
@@ -162,28 +172,28 @@ void main ()
         //         k_sleep (K_SECONDS (1));
         // }
 
-        // grblMain ();
+        grblMain ();
         // testStepperMotors ();
 }
 
 /**
  * Dummy function for motor testing.
  */
-// void testStepperMotors ()
-// {
-//         bool stepState{};
-//         bool dirState{};
+void testStepperMotors ()
+{
+        bool stepState{};
+        bool dirState{};
 
-//         while (true) {
-//                 gpio_pin_set (dirX, MOTORX_DIR_PIN, dirState);
-//                 gpio_pin_set (dirY, MOTORX_DIR_PIN, dirState);
-//                 dirState = !dirState;
+        while (true) {
+                gpio_pin_set (dirX, MOTORX_DIR_PIN, dirState);
+                gpio_pin_set (dirY, MOTORX_DIR_PIN, dirState);
+                dirState = !dirState;
 
-//                 for (int i = 0; i < 10000; ++i) {
-//                         gpio_pin_set (stepX, MOTORX_STEP_PIN, (int)stepState);
-//                         gpio_pin_set (stepY, MOTORY_STEP_PIN, (int)stepState);
-//                         stepState = !stepState;
-//                         k_usleep (1000);
-//                 }
-//         }
-// }
+                for (int i = 0; i < 10000; ++i) {
+                        gpio_pin_set (stepX, MOTORX_STEP_PIN, (int)stepState);
+                        gpio_pin_set (stepY, MOTORY_STEP_PIN, (int)stepState);
+                        stepState = !stepState;
+                        k_usleep (1000);
+                }
+        }
+}
