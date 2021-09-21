@@ -36,6 +36,7 @@ static struct nvs_fs fs;
 
 void init_nvs ()
 {
+  return;
         const struct device *flash_dev;
 		int rc;
 

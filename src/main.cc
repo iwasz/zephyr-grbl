@@ -102,9 +102,23 @@ static int lsdir (const char *path)
 const struct device *dev;
 
 // static void user_entry (void *p1, void *p2, void *p3) { hw_timer_print (dev); }
+void my_entry_point (void *, void *, void *)
+{
+
+        while (true) {
+                printk ("#");
+                k_sleep (K_SECONDS (1));
+        }
+}
+
+constexpr int SD_CARD_STACK_SIZE = 1024;
+constexpr int SD_CARD_PRIORITY = 13;
+
+K_THREAD_DEFINE (sdcard, SD_CARD_STACK_SIZE, my_entry_point, NULL, NULL, NULL, SD_CARD_PRIORITY, 0, 0);
 
 void main ()
 {
+
         mcuPeripheralsInit ();
         drv::init ();
 

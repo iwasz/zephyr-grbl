@@ -221,7 +221,7 @@ void mcuPeripheralsInit ()
         LOG_INF ("Wait for DTR");
         uint32_t dtr = 0U;
 
-        // TODO This blocks until somebody connects. Why is that? What is it for?
+        // TODO This blocks until somebody connects. Why is it that way? What is it for?
         while (true) {
                 uart_line_ctrl_get (dev, UART_LINE_CTRL_DTR, &dtr);
 
