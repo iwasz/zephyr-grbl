@@ -36,7 +36,7 @@ extern "C" {
   #ifdef USE_LINE_NUMBERS
     #define TX_BUFFER_SIZE 112
   #else
-    #define TX_BUFFER_SIZE 512
+    #define TX_BUFFER_SIZE 1024
   #endif
 #endif
 
@@ -63,7 +63,15 @@ uint32_t serial_get_rx_buffer_count();
 
 // Returns the number of bytes used in the TX serial buffer.
 // NOTE: Not used except for debugging and ensuring no TX bottlenecks.
-uint32_t serial_get_tx_buffer_count();
+// uint32_t serial_get_tx_buffer_count();
+
+void serial_reset_transmit_buffer ();
+uint32_t serial_buffer_append (const char *str);
+void serial_disable_irqs ();
+void serial_enable_irqs ();
+int serial_get_tx_line (uint32_t *buffer, uint8_t bufSize);
+bool serial_is_initialized ();
+
 
 #ifdef __cplusplus
 }

@@ -7,8 +7,11 @@
  ****************************************************************************/
 
 #pragma once
-#define ETL_LOG_ERRORS
-#define ETL_VERBOSE_ERRORS
-#define ETL_CHECK_PUSH_POP
 
-#include "etl/profiles/cpp17_no_stl.h"
+namespace sd {
+
+void init ();
+void executeLine (const char *fileName);
+int lsdir (const char *path);
+
+} // namespace sd

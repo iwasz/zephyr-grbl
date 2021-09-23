@@ -28,11 +28,16 @@ LOG_MODULE_REGISTER (serial);
 
 const struct device *uart = NULL;
 
+K_MUTEX_DEFINE(rxUartMutex);
 uint8_t rxRingBufferBlock[RX_BUFFER_SIZE]; // Power of 2 is more efficient here (according to the docs)
-struct ring_buf rxRingBuf;
+struct ring_buf rxRingBuf; // This ringBuffer is used both for the serial port and the sd card
+
+K_MUTEX_DEFINE(lineUartMutex);
+uint32_t lineRingBufferBlock[TX_BUFFER_SIZE / 4];
+struct ring_buf lineRingBuf; // Ring buffer for line based responses from the GRBL used for interactions with the SD casrd subsystem.
 
 uint8_t txRingBufferBlock[TX_BUFFER_SIZE];
-struct ring_buf txRingBuf;
+struct ring_buf txRingBuf; // Character based buffer for GRBL responses. This will be sent out via UART.
 
 // Returns the number of bytes available in the RX serial buffer.
 uint32_t serial_get_rx_buffer_available () { return ring_buf_capacity_get (&rxRingBuf) - ring_buf_size_get (&rxRingBuf); }
@@ -43,7 +48,7 @@ uint32_t serial_get_rx_buffer_count () { return ring_buf_size_get (&rxRingBuf); 
 
 // Returns the number of bytes used in the TX serial buffer.
 // NOTE: Not used except for debugging and ensuring no TX bottlenecks.
-uint32_t serial_get_tx_buffer_count () { return ring_buf_size_get (&txRingBuf); }
+// uint32_t serial_get_tx_buffer_count () { return ring_buf_size_get (&txRingBuf); }
 
 static void uartInterruptHandler (const struct device *dev, void *user_data);
 
@@ -51,10 +56,14 @@ void serial_init()
 {
    // Before error checking (which returns from this function and would leave ring buffers uninitialized).
         ring_buf_init (&rxRingBuf, sizeof (rxRingBufferBlock), rxRingBufferBlock);
+        ring_buf_init (&lineRingBuf, sizeof (lineRingBufferBlock) / 4, lineRingBufferBlock);
         ring_buf_init (&txRingBuf, sizeof (txRingBufferBlock), txRingBufferBlock);
 
         // This usart has to be initialized and set-up in src/mcu-peripherals.cc
         uart = device_get_binding (DT_LABEL (DT_ALIAS (grbluart)));
+        
+        // SD card functions check the uart variable to see if serial.c subsys. is ready. 
+        // So in this line they would see it is (if uart != NULL).
 
         if (!uart) {
                 LOG_ERR ("Problem configuring uart");
@@ -64,7 +73,7 @@ void serial_init()
         // IRQ based API.
         uart_irq_callback_set (uart, uartInterruptHandler);
 
-        /* Enable rx interrupts */
+       /* Enable rx interrupts */
         uart_irq_rx_enable (uart);
 }
 
@@ -72,13 +81,53 @@ void serial_init()
 // Writes one byte to the TX serial buffer. Called by main program.
 void serial_write(uint8_t data) {
 
+  // First add a byte to the UART buffer. This gets sent to the PC. 
   while (ring_buf_put (&txRingBuf, &data, 1) != 1) {
     // TODO: Restructure st_prep_buffer() calls to be executed here during a long print.
     if (sys_rt_exec_state & EXEC_RESET) { return; } // Only check for abort to avoid an endless loop.
   }
 
-  uart_irq_tx_enable (uart);
+
+  // And now another buffer that stores the same information (GRBL responses) but line by line. 
+  // This is to make a cooperation with SD thread easy.
+  // Double buffered.
+  static uint8_t l2buffer[LINE_BUFFER_SIZE + 1] = {'\0'};
+  static uint8_t len = 0; 
+  static bool cr = false; // \r
+  bool lf = false;
+
+
+  if (data == '\r') {
+    cr = true;
+  }
+  else if (data == '\n') {
+    lf = true;
+  }
+
+  l2buffer[len++] = data;
+
+  // Adds only line by line.
+  if (lf) { 
+    k_mutex_lock(&lineUartMutex, K_FOREVER);
+
+    // This data structure preserves the line length (and number of lines).
+    while (ring_buf_item_put (&lineRingBuf, 0, len, (uint32_t *)l2buffer, len/4 + len%4) != 0) {
+      
+      if (sys_rt_exec_state & EXEC_RESET) { 
+        k_mutex_unlock(&lineUartMutex);
+        return; 
+      } // Only check for abort to avoid an endless loop.
+    }
+
+    k_mutex_unlock(&lineUartMutex);
+    // uart_irq_tx_enable (uart);
+    len = 0;
+    l2buffer[0] = '\0';
+  }
+
+    uart_irq_tx_enable (uart);
 }
+
 
 /*
 // Data Register Empty Interrupt handler
@@ -105,7 +154,11 @@ uint8_t serial_read()
 {
   uint8_t data;
 
-  if (ring_buf_get (&rxRingBuf, &data, 1) != 1) {
+  k_mutex_lock(&rxUartMutex, K_FOREVER); // Isn't it too frequently?
+  uint32_t bytesRead = ring_buf_get (&rxRingBuf, &data, 1);
+  k_mutex_unlock(&rxUartMutex);
+
+  if (bytesRead != 1){
     return SERIAL_NO_DATA;
   }
 
@@ -179,8 +232,8 @@ static void uartInterruptHandler (const struct device *dev, void *user_data)
                         } // while
 }
 
-                if (uart_irq_tx_ready (dev)) {
-                        uint8_t buffer[64];
+                if (uart_irq_tx_ready (dev)) {                        
+                        uint8_t buffer[LINE_BUFFER_SIZE];
 
                         uint32_t bytesReadLen = ring_buf_get (&txRingBuf, buffer, sizeof (buffer));
 
@@ -198,4 +251,80 @@ static void uartInterruptHandler (const struct device *dev, void *user_data)
         }
 }
 
+/****************************************************************************/
+/* Access to the RX and TX buffers from the outside (for the SD card        */
+/* implementation).                                                         */
+/****************************************************************************/
+
 void serial_reset_read_buffer () { ring_buf_reset (&rxRingBuf); }
+void serial_reset_transmit_buffer () { ring_buf_reset (&lineRingBuf); }
+
+
+bool serial_is_initialized () { return uart != NULL; }
+
+/**
+ * Disables both RX and TX IRQs.
+ */
+void serial_disable_irqs ()
+{
+  if (uart == NULL) {
+    return;
+  }
+
+  uart_irq_rx_disable(uart);
+  // uart_irq_tx_disable(uart);
+}
+
+/**
+ * Enables both RX and TX IRQs.
+ */
+void serial_enable_irqs ()
+{
+  if (uart == NULL) {
+    return;
+  }
+
+  uart_irq_rx_enable(uart);
+  // uart_irq_tx_enable(uart);
+}
+
+/**
+ * Appends a string (a line[s]) to the RX buffer as if they has been sent 
+ * through UART. Do not call from the ISR, call from the user code. Can be called
+ * only if UART IRQs are off!
+ */
+uint32_t serial_buffer_append (const char *str)
+{
+  if (uart == NULL) {
+    return 0;
+  }
+  
+  k_mutex_lock(&rxUartMutex, K_FOREVER);
+  uint32_t written = ring_buf_put (&rxRingBuf, (const uint8_t *)str, strlen (str));
+  k_mutex_unlock(&rxUartMutex);
+  return written;
+}
+
+/**
+ * Returns line size in bytes (can be 0). Or -1 if the buffer 
+ * is too small (bufSize).
+ */
+int serial_get_tx_line (uint32_t *buffer, uint8_t bufSize)
+{
+  uint16_t type = 0;
+  uint8_t lineLen = 0;
+
+  k_mutex_lock(&lineUartMutex, K_FOREVER);
+  int ret = ring_buf_item_get(&lineRingBuf, &type, &lineLen, buffer, &bufSize);
+  k_mutex_unlock(&lineUartMutex);
+
+  if (ret == -EAGAIN) { // Ring buffer empty
+    return 0;
+  }
+
+  if (ret == -EMSGSIZE) {
+    return -1;
+  }
+
+  return lineLen;
+}

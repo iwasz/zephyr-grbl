@@ -570,7 +570,7 @@
 
 #ifdef DEFAULTS_ZEPHYR_GRBL_PLOTTER
 #define MICROSTEPS_XY 8
-#define STEP_REVS_XY 400
+#define STEP_REVS_XY 200
 #define MM_PER_REV_XY (2 * 20) // 20 pulley teeth. GT2 == 2mm
 #define MICROSTEPS_Z 1
 #define STEP_REVS_Z 5
