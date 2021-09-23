@@ -29,15 +29,20 @@ LOG_MODULE_REGISTER (serial);
 const struct device *uart = NULL;
 
 K_MUTEX_DEFINE(rxUartMutex);
-uint8_t rxRingBufferBlock[RX_BUFFER_SIZE]; // Power of 2 is more efficient here (according to the docs)
-struct ring_buf rxRingBuf; // This ringBuffer is used both for the serial port and the sd card
+RING_BUF_ITEM_DECLARE_SIZE(rxRingBuf, RX_BUFFER_SIZE);
+
+// uint8_t rxRingBufferBlock[RX_BUFFER_SIZE]; // Power of 2 is more efficient here (according to the docs)
+// struct ring_buf rxRingBuf; // This ringBuffer is used both for the serial port and the sd card
 
 K_MUTEX_DEFINE(lineUartMutex);
-uint32_t lineRingBufferBlock[TX_BUFFER_SIZE / 4];
-struct ring_buf lineRingBuf; // Ring buffer for line based responses from the GRBL used for interactions with the SD casrd subsystem.
+RING_BUF_ITEM_DECLARE_SIZE(lineRingBuf, TX_BUFFER_SIZE_WORDS);
+// uint32_t lineRingBufferBlock[TX_BUFFER_SIZE_WORDS];
+// struct ring_buf lineRingBuf; // Ring buffer for line based responses from the GRBL used for interactions with the SD casrd subsystem.
 
-uint8_t txRingBufferBlock[TX_BUFFER_SIZE];
-struct ring_buf txRingBuf; // Character based buffer for GRBL responses. This will be sent out via UART.
+
+// uint8_t txRingBufferBlock[TX_BUFFER_SIZE_BYTES];
+// struct ring_buf txRingBuf; // Character based buffer for GRBL responses. This will be sent out via UART.
+RING_BUF_ITEM_DECLARE_SIZE(txRingBuf, TX_BUFFER_SIZE_BYTES);
 
 // Returns the number of bytes available in the RX serial buffer.
 uint32_t serial_get_rx_buffer_available () { return ring_buf_capacity_get (&rxRingBuf) - ring_buf_size_get (&rxRingBuf); }
@@ -55,9 +60,9 @@ static void uartInterruptHandler (const struct device *dev, void *user_data);
 void serial_init()
 {
    // Before error checking (which returns from this function and would leave ring buffers uninitialized).
-        ring_buf_init (&rxRingBuf, sizeof (rxRingBufferBlock), rxRingBufferBlock);
-        ring_buf_init (&lineRingBuf, sizeof (lineRingBufferBlock) / 4, lineRingBufferBlock);
-        ring_buf_init (&txRingBuf, sizeof (txRingBufferBlock), txRingBufferBlock);
+        // ring_buf_init (&rxRingBuf, sizeof (rxRingBufferBlock), rxRingBufferBlock);
+        // ring_buf_init (&lineRingBuf, sizeof (lineRingBufferBlock) / 4, lineRingBufferBlock);
+        // ring_buf_init (&txRingBuf, sizeof (txRingBufferBlock), txRingBufferBlock);
 
         // This usart has to be initialized and set-up in src/mcu-peripherals.cc
         uart = device_get_binding (DT_LABEL (DT_ALIAS (grbluart)));
@@ -91,7 +96,7 @@ void serial_write(uint8_t data) {
   // And now another buffer that stores the same information (GRBL responses) but line by line. 
   // This is to make a cooperation with SD thread easy.
   // Double buffered.
-  static uint8_t l2buffer[LINE_BUFFER_SIZE + 1] = {'\0'};
+  static uint8_t l2buffer[LINE_BUFFER_SIZE] = {'\0'};
   static uint8_t len = 0; 
   static bool cr = false; // \r
   bool lf = false;
@@ -100,8 +105,9 @@ void serial_write(uint8_t data) {
   if (data == '\r') {
     cr = true;
   }
-  else if (data == '\n') {
+  else if (cr && data == '\n') {
     lf = true;
+    cr = false;
   }
 
   l2buffer[len++] = data;
@@ -123,6 +129,7 @@ void serial_write(uint8_t data) {
     // uart_irq_tx_enable (uart);
     len = 0;
     l2buffer[0] = '\0';
+    cr = false;
   }
 
     uart_irq_tx_enable (uart);
@@ -294,11 +301,7 @@ void serial_enable_irqs ()
  * only if UART IRQs are off!
  */
 uint32_t serial_buffer_append (const char *str)
-{
-  if (uart == NULL) {
-    return 0;
-  }
-  
+{  
   k_mutex_lock(&rxUartMutex, K_FOREVER);
   uint32_t written = ring_buf_put (&rxRingBuf, (const uint8_t *)str, strlen (str));
   k_mutex_unlock(&rxUartMutex);
@@ -322,8 +325,8 @@ int serial_get_tx_line (uint32_t *buffer, uint8_t bufSize)
     return 0;
   }
 
-  if (ret == -EMSGSIZE) {
-    return -1;
+  if (ret < 0) {
+    return ret;
   }
 
   return lineLen;

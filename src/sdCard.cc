@@ -17,6 +17,18 @@
 #include <fs/fs.h>
 #include <logging/log.h>
 
+/*
+ * https://github.com/gnea/grbl/issues/822 - good summary of the protocol.
+ *
+ * To sum things up:
+ * - 3 types of requests : g-code blocks, control commands and real-time commands
+ * - 2? types of resonses:
+ *   - push commands (async)
+ *   - responses to the above requests
+ * The so called "streaming protocol" (called this way by the op) is the request-response
+ * flow involving the c-command blocks and control commands.
+ */
+
 LOG_MODULE_REGISTER (sdCard);
 
 namespace {
@@ -37,26 +49,55 @@ using string = etl::string<LINE_BUFFER_SIZE>;
  */
 static const char *disk_mount_pt = "/SD:";
 
-void sdCardThread (void *, void *, void *)
+void grblResponseThread (void *, void *, void *);
+void grblRequestThread (void *, void *, void *);
+
+constexpr int SD_CARD_STACK_SIZE = 1024;
+constexpr int SD_CARD_PRIORITY = 13; // The same as the main thread! Time slicing is ON!
+
+K_THREAD_DEFINE (sdrx, SD_CARD_STACK_SIZE, grblResponseThread, NULL, NULL, NULL, SD_CARD_PRIORITY, 0, 0);
+// K_THREAD_DEFINE (sdtx, SD_CARD_STACK_SIZE, grblRequestThread, NULL, NULL, NULL, SD_CARD_PRIORITY, 0, 0);
+
+// To make things easier.
+static_assert (LINE_BUFFER_SIZE % 4 == 0);
+
+/**
+ *
+ */
+void grblResponseThread (void *, void *, void *)
 {
         while (true) {
-                // sd::executeLine ("$X\r\n");
-                // k_sleep (K_SECONDS (1));
+                k_sleep (K_MSEC (10));
+
+                string rsp;
+                rsp.resize (rsp.max_size ());
+                auto ret = serial_get_tx_line (reinterpret_cast<uint32_t *> (rsp.data ()), rsp.size () / 4);
+
+                if (ret < 0) {
+                        printk ("rsp buffer error");
+                        continue;
+                }
+
+                rsp.resize (ret);
+
+                if (!rsp.empty ()) {
+                        printk ("<%s", rsp.c_str ());
+                }
+        }
+}
+
+/**
+ *
+ */
+void grblRequestThread (void *, void *, void *)
+{
+        while (true) {
                 sd::executeLine ("G0 X-0.5 Y0.\r\n");
                 k_sleep (K_SECONDS (3));
                 sd::executeLine ("G0 X0. Y0.\r\n");
                 k_sleep (K_SECONDS (3));
         }
 }
-
-constexpr int SD_CARD_STACK_SIZE = 1024;
-constexpr int SD_CARD_PRIORITY = 13; // The same as the main thread! Time slicing is ON!
-
-K_THREAD_DEFINE (sdcard, SD_CARD_STACK_SIZE, sdCardThread, NULL, NULL, NULL, SD_CARD_PRIORITY, 0, 0);
-
-// To make things easier.
-static_assert (LINE_BUFFER_SIZE % 4 == 0);
-
 } // namespace
 
 namespace sd {
@@ -77,27 +118,27 @@ void command (const char *gCommand)
 /**
  * Waits until gets some.
  */
-string response ()
-{
-        // while (true) {
-        string rsp;
-        rsp.resize (rsp.max_size ());
-        auto ret = serial_get_tx_line (reinterpret_cast<uint32_t *> (rsp.data ()), rsp.size () / 4);
+// string response ()
+// {
+//         // while (true) {
+//         string rsp;
+//         rsp.resize (rsp.max_size ());
+//         auto ret = serial_get_tx_line (reinterpret_cast<uint32_t *> (rsp.data ()), rsp.size () / 4);
 
-        if (ret < 0) {
-                return {};
-        }
+//         if (ret < 0) {
+//                 return {};
+//         }
 
-        if (ret == 0) {
-                // k_sleep (K_MSEC (10));
-                // continue;
-                return {};
-        }
+//         if (ret == 0) {
+//                 // k_sleep (K_MSEC (10));
+//                 // continue;
+//                 return {};
+//         }
 
-        rsp.resize (ret);
-        return rsp;
-        // }
-}
+//         rsp.resize (ret);
+//         return rsp;
+//         // }
+// }
 
 /**
  *
@@ -110,8 +151,8 @@ void executeLine (const char *line)
         }
 
         serial_disable_irqs ();
-        serial_reset_read_buffer ();
-        serial_reset_transmit_buffer ();
+        // serial_reset_read_buffer ();
+        // serial_reset_transmit_buffer ();
 
         /*
          * Now we are sure the ring buffers are empty. UART IRQs are off, and the ring
@@ -120,48 +161,29 @@ void executeLine (const char *line)
          */
         command (line);
         printk (">%s", line);
-        return;
+        // // return;
 
-        /*
-         * Possible responses:
-         * - ok\r\n
-         * - error:dec\r\n
-         */
+        // /*
+        //  * Possible responses:
+        //  * - ok\r\n
+        //  * - error:dec\r\n
+        //  */
 
-        static string rsp /* = response () */; // Static for logging which runs in different thread.
+        // static string rsp /* = response () */; // Static for logging which runs in different thread.
 
-        while (true) {
-                rsp.resize (rsp.max_size ());
-                auto ret = serial_get_tx_line (reinterpret_cast<uint32_t *> (rsp.data ()), rsp.size () / 4);
+        // // Responses are sent tgrough the GRBL uart port.
 
-                if (ret <= 0) {
-                        k_sleep (K_MSEC (1));
-                        continue;
-                }
-
-                rsp.resize (ret);
-        }
-
-        if (!rsp.empty ()) {
-                printk ("<%s", rsp.c_str ());
-        }
-        else {
-                printk ("err\r\n");
-        }
-
-        // Responses are sent tgrough the GRBL uart port.
-
-        // if (rsp.find ("error:") == 0 && rsp.size () > 6) {
-        //         // LOG_WRN ("GRBL eror:%d", atoi (rsp.c_str () + 6));
-        //         // LOG_WRN ("GRBL eror:%d", atoi (rsp.c_str () + 6));
-        // }
-        // else if (!rsp.empty () && rsp != "ok\r\n") {
-        //         LOG_WRN ("Unknown GRBL resp");
-        // }
+        // // if (rsp.find ("error:") == 0 && rsp.size () > 6) {
+        // //         // LOG_WRN ("GRBL eror:%d", atoi (rsp.c_str () + 6));
+        // //         // LOG_WRN ("GRBL eror:%d", atoi (rsp.c_str () + 6));
+        // // }
+        // // else if (!rsp.empty () && rsp != "ok\r\n") {
+        // //         LOG_WRN ("Unknown GRBL resp");
+        // // }
 
         // Make sure the file has been executed entirely.
-        serial_reset_read_buffer ();
-        serial_reset_transmit_buffer ();
+        // serial_reset_read_buffer ();
+        // serial_reset_transmit_buffer ();
         serial_enable_irqs ();
 }
 

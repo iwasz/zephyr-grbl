@@ -32,14 +32,9 @@ extern "C" {
 #ifndef RX_BUFFER_SIZE
   #define RX_BUFFER_SIZE 1024
 #endif
-#ifndef TX_BUFFER_SIZE
-  #ifdef USE_LINE_NUMBERS
-    #define TX_BUFFER_SIZE 112
-  #else
-    #define TX_BUFFER_SIZE 1024
-  #endif
-#endif
 
+#define TX_BUFFER_SIZE_BYTES 1024
+#define TX_BUFFER_SIZE_WORDS (TX_BUFFER_SIZE_BYTES/4)
 #define SERIAL_NO_DATA 0xff
 
 
