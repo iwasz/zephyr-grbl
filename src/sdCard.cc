@@ -7,10 +7,12 @@
  ****************************************************************************/
 
 #include "sdCard.h"
+#include "Machine.h"
 #include "grbl/protocol.h"
 #include "grbl/serial.h"
 #include <climits>
 #include <cstdlib>
+#include <ctre.hpp>
 #include <disk/disk_access.h>
 #include <etl/string.h>
 #include <ff.h>
@@ -19,6 +21,7 @@
 
 /*
  * https://github.com/gnea/grbl/issues/822 - good summary of the protocol.
+ * https://github.com/wnelis/Grbl-driver-python/blob/master/GrblDriver.py - Python code written by the guy from the above thread.
  *
  * To sum things up:
  * - 3 types of requests : g-code blocks, control commands and real-time commands
@@ -27,11 +30,25 @@
  *   - responses to the above requests
  * The so called "streaming protocol" (called this way by the op) is the request-response
  * flow involving the c-command blocks and control commands.
+ *
+ * empty string, g-code or system command ($x) -> response:
+ * ok | error:num
+ * ^X : welcome
+ * !, ? and ~ are treated somewhat differently, but I can't see how.
+ *
+ * Push messages:
+ *   gdWelcomeMsg,		        # Soft reset completed message
+ *   '^ALARM:',				# Alarm message
+ *   '^\[MSG:.*\]$',			# Unsolicited feedback message
+ *   '^>.*:(?:ok|error:.*)$',		# Start up message ($N)
+ *   '^$'				# Empty line
+ *
+ * "Verbose" messages:
+ * <Idle|MPos:0.000,3.000,0.000|F:0|WCO:0.000,0.000,0.000>
+ * <Idle|MPos:0.000,3.000,0.000|F:0>
  */
 
 LOG_MODULE_REGISTER (sdCard);
-
-namespace {
 
 static FATFS fat_fs;
 
@@ -61,6 +78,112 @@ K_THREAD_DEFINE (sdrx, SD_CARD_STACK_SIZE, grblResponseThread, NULL, NULL, NULL,
 // To make things easier.
 static_assert (LINE_BUFFER_SIZE % 4 == 0);
 
+/*
+Actions
+- Wait for the system to get ready.
+  - For instance chceck if peripherals are initialized or something.
+- Reset the GRBL. It can be in unknown state. UGS sequence is (I think) this : ^X, $$, $G
+- $X : Unlock
+- $H : Home
+- $N probably those 2 lines that got stored in the EEPROM ?
+- $$ : current settings
+- $x=val - store a setting?
+- $G : supported comands? Noo, too few.
+- $# some state. Don't know the meaning.
+- $SLP : sleep (^X to wake up)
+- $ : help
+- $I version
+- $J : ?
+$C : ?
+
+
+
+
+TODO move to a separate file (differentiate to sd and grbl)
+TODO change namespace name to grbl
+*/
+namespace sd {
+void command (gsl::czstring gCommand);
+void unlock () { command ("$X\r\n"); }
+void reset () { command ("\030"); }
+
+using namespace ls;
+
+enum class Error { none, one, two };
+enum class Alarm { limit, two };
+enum class StateName { idle, alarm, hold };
+
+/**
+ * State machine conditions.
+ */
+
+/// Gcode and status response:
+constexpr auto gCodeResponse = [] (auto const &s) { return ctre::match<"^(?:ok|error:(\\d*))(\r\n)?$"> (s); };
+/// Push messages:
+constexpr auto welcomeMessage = [] (auto const &s) { return ctre::match<"^Grbl.+\\](\r\n)?$"> (s); };
+constexpr auto settingMessage = [] (auto const &s) { return ctre::match<"^\\$\\d+=.*(\r\n)?"> (s); };
+constexpr auto msgMessage = [] (auto const &s) { return ctre::match<"^\\[MSG:.*\\](\r\n)?$"> (s); };
+constexpr auto lockedMessage = [] (auto const &s) { return ctre::match<"^\\[MSG:'\\$H'\\|'\\$X' to unlock\\](\r\n)?$"> (s); };
+constexpr auto unlockedMessage = [] (auto const &s) { return ctre::match<"^\\[MSG:Caution: Unlocked\\](\r\n)?$"> (s); };
+constexpr auto alarmMessage = [] (auto const &s) { return ctre::match<"^ALARM:(\\d*)(\r\n)?$"> (s); };
+constexpr auto errorMessage = [] (auto const &s) { return ctre::match<"^error:(\\d*)(\r\n)?$"> (s); };
+/// Verbose (responses to the "?")
+constexpr auto verboseMessage = [] (auto const &s) { return ctre::match<"^<([a-zA-Z]*)\\|MPos:(.*),(.*),(.*)\\|F:(\\d*).*(\r\n)?$"> (s); };
+
+/**
+ * Tracks GRBL's state. A minimal subset of what the UGS can do.
+ */
+auto grblMachine = machine (state ("init"_ST, entry ([] {
+                                           reset ();
+                                           printk ("# init");
+                                   }),
+                                   transition ("ready"_ST, welcomeMessage)),
+
+                            state ("ready"_ST, entry ([] () { printk ("# ready"); }), transition ("locked"_ST, lockedMessage)),
+
+                            state ("locked"_ST, entry ([] (auto) {
+                                           unlock ();
+                                           printk ("# locked");
+                                   }),
+                                   transition ("ready"_ST, unlockedMessage)),
+
+                            state ("error"_ST, entry ([] () {}), transition ("ready"_ST, [] (string const &s) { return s == ""; })),
+
+                            state ("waitrsp"_ST, entry ([] () {}), transition ("ready"_ST, [] (string const &s) { return s == ""; })));
+
+/**
+ * Tracks the state of the GRBL. We probably could reach out to the GRBL itself since it
+ * is runninng alongside in another thread, but I feel that communicating wit it the normal
+ * way is the right thing to do. Everythong stays separated.
+ */
+class State {
+public:
+private:
+        Error error;
+        Alarm alarm;
+        StateName stateName;
+};
+
+/**
+ * Get and return next response if there is some in the ring buffer.
+ */
+string response ()
+{
+        string rsp;
+        rsp.resize (rsp.max_size ());
+        auto ret = serial_get_tx_line (reinterpret_cast<uint32_t *> (rsp.data ()), rsp.size () / 4);
+
+        if (ret < 0) {
+                printk ("rsp buffer error");
+                return {};
+        }
+
+        rsp.resize (ret);
+        return rsp;
+}
+
+} // namespace sd
+
 /**
  *
  */
@@ -69,20 +192,15 @@ void grblResponseThread (void *, void *, void *)
         while (true) {
                 k_sleep (K_MSEC (10));
 
-                string rsp;
-                rsp.resize (rsp.max_size ());
-                auto ret = serial_get_tx_line (reinterpret_cast<uint32_t *> (rsp.data ()), rsp.size () / 4);
-
-                if (ret < 0) {
-                        printk ("rsp buffer error");
-                        continue;
-                }
-
-                rsp.resize (ret);
+                string rsp = sd::response ();
 
                 if (!rsp.empty ()) {
-                        printk ("<%s", rsp.c_str ());
+                        printk ("< %s", rsp.c_str ()); // Formatted synchronously, so no worries aboyt rsp.
                 }
+
+                // sd::grblMachine.run (rsp);
+
+                // bool b = sd::lockedMessage (rsp);
         }
 }
 
@@ -98,52 +216,27 @@ void grblRequestThread (void *, void *, void *)
                 k_sleep (K_SECONDS (3));
         }
 }
-} // namespace
 
 namespace sd {
 
 /**
  *
  */
-void command (const char *gCommand)
+void command (gsl::czstring gCommand)
 {
         if (!serial_is_initialized ()) {
                 LOG_WRN ("Serial subsystem is required for SD card to operate.");
                 return;
         }
 
+        printk ("> %s", gCommand); // Formatted synchronously, so no worries aboyt rsp.
         serial_buffer_append (gCommand);
 }
 
 /**
- * Waits until gets some.
- */
-// string response ()
-// {
-//         // while (true) {
-//         string rsp;
-//         rsp.resize (rsp.max_size ());
-//         auto ret = serial_get_tx_line (reinterpret_cast<uint32_t *> (rsp.data ()), rsp.size () / 4);
-
-//         if (ret < 0) {
-//                 return {};
-//         }
-
-//         if (ret == 0) {
-//                 // k_sleep (K_MSEC (10));
-//                 // continue;
-//                 return {};
-//         }
-
-//         rsp.resize (ret);
-//         return rsp;
-//         // }
-// }
-
-/**
  *
  */
-void executeLine (const char *line)
+void executeLine (gsl::czstring line)
 {
         if (!serial_is_initialized ()) {
                 LOG_WRN ("Serial subsystem is required for SD card to operate.");
@@ -160,7 +253,7 @@ void executeLine (const char *line)
          * thise buffer is the SD card API.
          */
         command (line);
-        printk (">%s", line);
+        printk (" %s", line);
         // // return;
 
         // /*
@@ -194,7 +287,7 @@ void init ()
 {
         /* raw disk i/o */
         do {
-                static const char *disk_pdrv = "SD";
+                static gsl::czstring disk_pdrv = "SD";
                 uint64_t memory_size_mb;
                 uint32_t block_count;
                 uint32_t block_size;
@@ -236,7 +329,7 @@ void init ()
 /**
  *
  */
-int lsdir (const char *path)
+int lsdir (gsl::czstring path)
 {
         int res;
         struct fs_dir_t dirp;

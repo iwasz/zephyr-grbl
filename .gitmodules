@@ -10,3 +10,12 @@
 [submodule "deps/etl"]
 	path = deps/etl
 	url = git@github.com:ETLCPP/etl.git
+[submodule "test/unit-tests/Catch2"]
+	path = test/unit-tests/Catch2
+	url = git@github.com:catchorg/Catch2.git
+[submodule "deps/compile-time-regular-expressions"]
+	path = deps/compile-time-regular-expressions
+	url = git@github.com:hanickadot/compile-time-regular-expressions.git
+[submodule "deps/libstate"]
+	path = deps/libstate
+	url = git@github.com:iwasz/libstate.git

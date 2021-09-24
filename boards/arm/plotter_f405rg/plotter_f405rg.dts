@@ -115,6 +115,28 @@
 			//     label = "Motor 2 stall diagnostic output. Detects when the motor stalls.";
 		// };
 	};
+
+
+	uiButtons {
+		compatible = "gpio-keys";
+
+		encoderA {
+			gpios = <&gpioc 4 (GPIO_ACTIVE_LOW| GPIO_PULL_UP)>;
+			label = "Encoder output A";
+		};
+
+		encoderB {
+			gpios = <&gpioc 5 (GPIO_ACTIVE_LOW| GPIO_PULL_UP)>;
+			label = "Encoder output B";
+		};
+
+		enter {
+			gpios = <&gpioc 6 (GPIO_ACTIVE_LOW| GPIO_PULL_UP)>;
+			label = "Encoder button";
+		};
+
+
+	};
 };
 
 &usart2 {

@@ -14,6 +14,8 @@ include_directories (deps/TMC2130Stepper/src)
 include_directories (deps/etl/include/)
 include_directories (deps/gsl-lite/include)
 include_directories (deps/gnea-grbl) # Warning! It has limits.h file which interferes with libc
+include_directories (deps/compile-time-regular-expressions/include)
+include_directories (deps/libstate/src)
 
 add_definitions("-DDEFAULTS_ZEPHYR_GRBL_PLOTTER")
 

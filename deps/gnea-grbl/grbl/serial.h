@@ -62,6 +62,8 @@ uint32_t serial_get_rx_buffer_count();
 
 void serial_reset_transmit_buffer ();
 uint32_t serial_buffer_append (const char *str);
+uint32_t serial_buffer_appendln (const char *str);
+
 void serial_disable_irqs ();
 void serial_enable_irqs ();
 int serial_get_tx_line (uint32_t *buffer, uint8_t bufSize);

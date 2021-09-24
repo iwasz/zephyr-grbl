@@ -7,11 +7,12 @@
  ****************************************************************************/
 
 #pragma once
+#include <gsl/gsl>
 
 namespace sd {
 
 void init ();
-void executeLine (const char *fileName);
-int lsdir (const char *path);
+void executeLine (gsl::czstring fileName);
+int lsdir (gsl::czstring path);
 
 } // namespace sd

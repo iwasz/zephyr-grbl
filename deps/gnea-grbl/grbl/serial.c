@@ -295,18 +295,30 @@ void serial_enable_irqs ()
   // uart_irq_tx_enable(uart);
 }
 
+static uint32_t serial_buffer_appendln_impl (const char *str, bool crlf)
+{  
+  k_mutex_lock(&rxUartMutex, K_FOREVER);
+  uint32_t written = ring_buf_put (&rxRingBuf, (const uint8_t *)str, strlen (str));
+  
+  if (crlf){
+    ring_buf_put (&rxRingBuf, (const uint8_t *)"\r\n", 2);
+  }
+  
+  k_mutex_unlock(&rxUartMutex);
+  return written;
+}
+
 /**
  * Appends a string (a line[s]) to the RX buffer as if they has been sent 
  * through UART. Do not call from the ISR, call from the user code. Can be called
  * only if UART IRQs are off!
  */
-uint32_t serial_buffer_append (const char *str)
-{  
-  k_mutex_lock(&rxUartMutex, K_FOREVER);
-  uint32_t written = ring_buf_put (&rxRingBuf, (const uint8_t *)str, strlen (str));
-  k_mutex_unlock(&rxUartMutex);
-  return written;
-}
+uint32_t serial_buffer_append (const char *str) {  return serial_buffer_appendln_impl (str, false); }
+
+/**
+* As the serial_buffer_append, but adds \r\n at the end.
+*/
+uint32_t serial_buffer_appendln (const char *str) { return serial_buffer_appendln_impl (str, true); }
 
 /**
  * Returns line size in bytes (can be 0). Or -1 if the buffer 
