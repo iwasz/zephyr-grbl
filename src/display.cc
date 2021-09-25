@@ -7,6 +7,7 @@
  ****************************************************************************/
 
 #include "display.h"
+#include "sdCard.h"
 #include <device.h>
 #include <devicetree.h>
 #include <drivers/gpio.h>
@@ -34,21 +35,48 @@ namespace {
         const struct device *enter;
 
         gpio_callback encoderCallback;
+        k_timer encoderDebounceTimer;
+        enum class EncoderDebounceState { none, a, b, enter };
+        EncoderDebounceState encoderDebounceState{};
 
+        /**
+         * ISR button.
+         */
         void encoderCallbackCb (const struct device *port, struct gpio_callback *cb, gpio_port_pins_t pins)
         {
                 ARG_UNUSED (cb);
 
                 if (port == encoderA && (pins & BIT (ENCODER_A_PIN))) {
-                        printk ("A\r\n");
+                        encoderDebounceState = EncoderDebounceState::a;
                 }
 
                 if (port == encoderB && (pins & BIT (ENCODER_B_PIN))) {
-                        printk ("B\r\n");
+                        encoderDebounceState = EncoderDebounceState::b;
                 }
 
                 if (port == enter && (pins & BIT (ENCODER_ENTER_PIN))) {
-                        printk ("E\r\n");
+                        encoderDebounceState = EncoderDebounceState::enter;
+                }
+
+                k_timer_start (&encoderDebounceTimer, K_MSEC (2), K_NO_WAIT);
+        }
+
+        /**
+         * Kernel timer callback.
+         */
+        void encoderDebounceCb (struct k_timer *timer)
+        {
+                ARG_UNUSED (timer);
+
+                if (encoderDebounceState == EncoderDebounceState::a && gpio_pin_get (encoderA, ENCODER_A_PIN)) {
+                        printk ("A");
+                }
+                else if (encoderDebounceState == EncoderDebounceState::b && gpio_pin_get (encoderB, ENCODER_B_PIN)) {
+                        printk ("B");
+                }
+                else if (encoderDebounceState == EncoderDebounceState::enter && gpio_pin_get (enter, ENCODER_ENTER_PIN)) {
+                        // printk ("E");
+                        sd::jogYN ();
                 }
         }
 } // namespace
@@ -82,6 +110,7 @@ void init ()
 
         gpio_init_callback (&encoderCallback, encoderCallbackCb, BIT (ENCODER_A_PIN) | BIT (ENCODER_B_PIN) | BIT (ENCODER_ENTER_PIN));
         ret |= gpio_add_callback (encoderA, &encoderCallback);
+        k_timer_init (&encoderDebounceTimer, encoderDebounceCb, nullptr);
 
         if (ret != 0) {
                 LOG_ERR ("Encoder init failed");

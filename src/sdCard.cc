@@ -105,6 +105,7 @@ TODO change namespace name to grbl
 */
 
 namespace sd {
+void executeLine (gsl::czstring s);
 
 using namespace ls;
 

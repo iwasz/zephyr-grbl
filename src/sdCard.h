@@ -12,7 +12,10 @@
 namespace sd {
 
 void init ();
-void executeLine (gsl::czstring fileName);
+// void executeLine (gsl::czstring fileName);
 int lsdir (gsl::czstring path);
+
+void jogYP ();
+void jogYN ();
 
 } // namespace sd
