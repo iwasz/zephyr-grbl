@@ -91,10 +91,12 @@
 * [ ] Enable all the peripherals.
   * [ ] Enable OLED.
 * [ ] Refactor GRBL so that it can print from the SD card and from the USB.
-  * [ ] `serial_read` has to be abstracted-out. In the SD card scenario it has to return the next character from the selected file.
-  * [ ] Main IRQ should have higher priority than the logging and shell threads. It's the most important one! Thers no point of having it with the priority so low.
-  * [ ] Wrap *protocol.c*s `protocol_main_loop` in a thread. Priority higher than 14.
-  * [ ] Synchronize access to ring buffers in the serial.c (after adding the thread).
+  * [x] `serial_read` has to be abstracted-out. In the SD card scenario it has to return the next character from the selected file.
+  * [x] Main IRQ should have higher priority than the logging and shell threads. It's the most important one! Thers no point of having it with the priority so low.
+  * [x] Wrap *protocol.c*s `protocol_main_loop` in a thread. Priority higher than 14. (EDIT: main thread).
+  * [x] Synchronize access to ring buffers in the serial.c (after adding the thread).
+  * [ ] Implenent a few useful commnads into the state machine itself (homing, reset). SD/GRBL thread
+  * [ ] Implement printing from the sd card in the state machine. SD/GRBL thread.
 * [ ] Implement the menu:
   * [ ] Print from file
     * [ ] List of files

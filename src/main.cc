@@ -6,6 +6,7 @@
  *  ~~~~~~~~~                                                               *
  ****************************************************************************/
 
+#include "display.h"
 #include "hw_timer.h"
 #include "sdCard.h"
 #include "stepperDriverSettings.h"
@@ -27,6 +28,7 @@ void testStepperMotors ();
  */
 void main ()
 {
+        disp::init ();
         mcuPeripheralsInit ();
         drv::init ();
 

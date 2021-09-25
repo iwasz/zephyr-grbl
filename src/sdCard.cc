@@ -64,16 +64,17 @@ using string = etl::string<LINE_BUFFER_SIZE>;
  *  Note the fatfs library is able to mount only strings inside _VOLUME_STRS
  *  in ffconf.h
  */
-static const char *disk_mount_pt = "/SD:";
+static const char *const disk_mount_pt = "/SD:";
 
 void grblResponseThread (void *, void *, void *);
 void grblRequestThread (void *, void *, void *);
 
-constexpr int SD_CARD_STACK_SIZE = 1024;
+constexpr int SD_CARD_STACK_SIZE = 32768;
 constexpr int SD_CARD_PRIORITY = 13; // The same as the main thread! Time slicing is ON!
 
 K_THREAD_DEFINE (sdrx, SD_CARD_STACK_SIZE, grblResponseThread, NULL, NULL, NULL, SD_CARD_PRIORITY, 0, 0);
 // K_THREAD_DEFINE (sdtx, SD_CARD_STACK_SIZE, grblRequestThread, NULL, NULL, NULL, SD_CARD_PRIORITY, 0, 0);
+K_MUTEX_DEFINE (machineMutex);
 
 // To make things easier.
 static_assert (LINE_BUFFER_SIZE % 4 == 0);
@@ -102,10 +103,8 @@ $C : ?
 TODO move to a separate file (differentiate to sd and grbl)
 TODO change namespace name to grbl
 */
+
 namespace sd {
-void command (gsl::czstring gCommand);
-void unlock () { command ("$X\r\n"); }
-void reset () { command ("\030"); }
 
 using namespace ls;
 
@@ -119,8 +118,12 @@ enum class StateName { idle, alarm, hold };
 
 /// Gcode and status response:
 constexpr auto gCodeResponse = [] (auto const &s) { return ctre::match<"^(?:ok|error:(\\d*))(\r\n)?$"> (s); };
+constexpr auto ok = [] (auto const &s) { return s == "ok\r\n"; };
 /// Push messages:
-constexpr auto welcomeMessage = [] (auto const &s) { return ctre::match<"^Grbl.+\\](\r\n)?$"> (s); };
+// constexpr auto welcomeMessage = [] (auto const &s) { return ctre::match<"^Grbl.+\\](\r\n)?$"> (s); };
+// constexpr auto welcomeMessage = [] (auto const &s) { return ctre::match<"^Grbl.+\\](\r\n)?$"> ("Grbl 1.1h ['$' for help]"); };
+constexpr auto welcomeMessage = [] (auto const &s) { return s == "Grbl 1.1h ['$' for help]\r\n"; };
+// auto welcomeMessage = [] { return [] (auto const &s) { return ctre::match<"^Grbl.+\\](\r\n)?$"> (s); }; };
 constexpr auto settingMessage = [] (auto const &s) { return ctre::match<"^\\$\\d+=.*(\r\n)?"> (s); };
 constexpr auto msgMessage = [] (auto const &s) { return ctre::match<"^\\[MSG:.*\\](\r\n)?$"> (s); };
 constexpr auto lockedMessage = [] (auto const &s) { return ctre::match<"^\\[MSG:'\\$H'\\|'\\$X' to unlock\\](\r\n)?$"> (s); };
@@ -133,23 +136,54 @@ constexpr auto verboseMessage = [] (auto const &s) { return ctre::match<"^<([a-z
 /**
  * Tracks GRBL's state. A minimal subset of what the UGS can do.
  */
-auto grblMachine = machine (state ("init"_ST, entry ([] {
-                                           reset ();
-                                           printk ("# init");
-                                   }),
-                                   transition ("ready"_ST, welcomeMessage)),
+auto grblMachine
+        = machine (state ("init"_ST, entry ([] {
+                                  executeLine ("\030");
+                                  printk ("# init\r\n");
+                          }),
+                          transition ("ready"_ST, welcomeMessage)),
 
-                            state ("ready"_ST, entry ([] () { printk ("# ready"); }), transition ("locked"_ST, lockedMessage)),
+                   state ("ready"_ST, entry ([] () { printk ("# ready\r\n"); }),
+                          transition ("locked"_ST, lockedMessage),                             // GRBL locked itself. Immediately unlock.
+                          transition ("jogYP"_ST, [] (string const &s) { return s == "yp"; }), // User action jog along Y in the positive dir.
+                          transition ("jogYN"_ST, [] (string const &s) { return s == "yn"; })  // User action jog along Y in the positive dir.
+                          ),
 
-                            state ("locked"_ST, entry ([] (auto) {
-                                           unlock ();
-                                           printk ("# locked");
-                                   }),
-                                   transition ("ready"_ST, unlockedMessage)),
+                   state ("locked"_ST, entry ([] (auto) { // Automatic unlocking state.
+                                  executeLine ("$X\r\n"); // Send command to the GRBL.
+                                  printk ("# locked\r\n");
+                          }),
+                          transition ("ready"_ST, unlockedMessage)), // Transition back to ready upon receiving a response.
 
-                            state ("error"_ST, entry ([] () {}), transition ("ready"_ST, [] (string const &s) { return s == ""; })),
+                   state ("jogYP"_ST, entry ([] (auto) {
+                                  sd::executeLine ("G0 X0. Y0.\r\n");
+                                  printk ("# jogYP\r\n");
+                          }),
+                          transition ("ready"_ST, ok)), // Transition back to ready upon receiving a response.
 
-                            state ("waitrsp"_ST, entry ([] () {}), transition ("ready"_ST, [] (string const &s) { return s == ""; })));
+                   state ("jogYN"_ST, entry ([] (auto) {
+                                  sd::executeLine ("G0 X-0.5 Y0.\r\n");
+                                  printk ("# jogYN\r\n");
+                          }),
+                          transition ("ready"_ST, ok)),
+
+                   state ("error"_ST, entry ([] () {}), transition ("ready"_ST, [] (string const &s) { return s == ""; })),
+
+                   state ("waitrsp"_ST, entry ([] () {}), transition ("ready"_ST, [] (string const &s) { return s == ""; })));
+
+void jogYP ()
+{
+        k_mutex_lock (&machineMutex, K_FOREVER);
+        grblMachine.run (string ("yp"));
+        k_mutex_unlock (&machineMutex);
+}
+
+void jogYN ()
+{
+        k_mutex_lock (&machineMutex, K_FOREVER);
+        grblMachine.run (string ("yn"));
+        k_mutex_unlock (&machineMutex);
+}
 
 /**
  * Tracks the state of the GRBL. We probably could reach out to the GRBL itself since it
@@ -198,9 +232,15 @@ void grblResponseThread (void *, void *, void *)
                         printk ("< %s", rsp.c_str ()); // Formatted synchronously, so no worries aboyt rsp.
                 }
 
-                // sd::grblMachine.run (rsp);
+                k_mutex_lock (&machineMutex, K_FOREVER);
+                sd::grblMachine.run (rsp);
+                k_mutex_unlock (&machineMutex);
 
-                // bool b = sd::lockedMessage (rsp);
+                // bool b = ctre::match<"^Grbl.+\\](\r\n)?$"> (rsp);
+
+                // if (b) {
+                //         printk ("We've gotta match!");
+                // }
         }
 }
 
@@ -224,7 +264,7 @@ namespace sd {
  */
 void command (gsl::czstring gCommand)
 {
-        if (!serial_is_initialized ()) {
+        if (!serial_is_initialized ()) { // TODO remove
                 LOG_WRN ("Serial subsystem is required for SD card to operate.");
                 return;
         }
@@ -253,7 +293,7 @@ void executeLine (gsl::czstring line)
          * thise buffer is the SD card API.
          */
         command (line);
-        printk (" %s", line);
+        // printk (" %s", line);
         // // return;
 
         // /*

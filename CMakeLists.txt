@@ -23,7 +23,8 @@ target_sources(app PRIVATE
     src/main.cc
     src/zephyrGrblPeripherals.cc
     src/stepperDriverSettings.cc
-    src/sdCard.cc
+    # src/sdCard.cc
+    src/display.cc
 
     # deps/TMC2130Stepper/src/source/SW_SPI.cpp
     deps/TMC2130Stepper/src/source/TMC2130Stepper_CHOPCONF.cpp
