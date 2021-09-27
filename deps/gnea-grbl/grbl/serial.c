@@ -117,12 +117,8 @@ void serial_write(uint8_t data) {
     k_mutex_lock(&lineUartMutex, K_FOREVER);
 
     // This data structure preserves the line length (and number of lines).
-    while (ring_buf_item_put (&lineRingBuf, 0, len, (uint32_t *)l2buffer, len/4 + len%4) != 0) {
-      
-      if (sys_rt_exec_state & EXEC_RESET) { 
-        k_mutex_unlock(&lineUartMutex);
-        return; 
-      } // Only check for abort to avoid an endless loop.
+    if (ring_buf_item_put (&lineRingBuf, 0, len, (uint32_t *)l2buffer, len/4 + len%4) != 0) {
+      LOG_ERR ("lineRingBuf bytes skipped");
     }
 
     k_mutex_unlock(&lineUartMutex);

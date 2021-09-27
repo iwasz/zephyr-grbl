@@ -156,20 +156,10 @@ auto grblMachine
                           }),
                           transition ("ready"_ST, unlockedMessage)), // Transition back to ready upon receiving a response.
 
-                   state ("jogYP"_ST, entry ([] (auto) {
-                                  sd::executeLine ("G0 X0. Y0.\r\n");
-                                  printk ("# jogYP\r\n");
-                          }),
-                          transition ("ready"_ST, ok)), // Transition back to ready upon receiving a response.
-
-                   state ("jogYN"_ST, entry ([] (auto) {
-                                  sd::executeLine ("G0 X-0.5 Y0.\r\n");
-                                  printk ("# jogYN\r\n");
-                          }),
-                          transition ("ready"_ST, ok)),
+                   state ("jogYP"_ST, entry ([] (auto) { sd::executeLine ("G21G91Y10F5000\r\n"); }), transition ("ready"_ST, ok)),
+                   state ("jogYN"_ST, entry ([] (auto) { sd::executeLine ("G21G91Y-10F5000\r\n"); }), transition ("ready"_ST, ok)),
 
                    state ("error"_ST, entry ([] () {}), transition ("ready"_ST, [] (string const &s) { return s == ""; })),
-
                    state ("waitrsp"_ST, entry ([] () {}), transition ("ready"_ST, [] (string const &s) { return s == ""; })));
 
 void jogYP ()
@@ -236,12 +226,6 @@ void grblResponseThread (void *, void *, void *)
                 k_mutex_lock (&machineMutex, K_FOREVER);
                 sd::grblMachine.run (rsp);
                 k_mutex_unlock (&machineMutex);
-
-                // bool b = ctre::match<"^Grbl.+\\](\r\n)?$"> (rsp);
-
-                // if (b) {
-                //         printk ("We've gotta match!");
-                // }
         }
 }
 
