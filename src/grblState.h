@@ -7,11 +7,10 @@
  ****************************************************************************/
 
 #pragma once
-#include <gsl/gsl>
 
-namespace sd {
+namespace grbl {
 
-void init ();
-int lsdir (gsl::czstring path);
+enum class JogDirection { yPositive, yNegative, xPositive, xNegative };
+void jog (JogDirection dir);
 
-} // namespace sd
+} // namespace grbl

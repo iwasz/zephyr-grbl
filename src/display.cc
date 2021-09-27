@@ -7,7 +7,7 @@
  ****************************************************************************/
 
 #include "display.h"
-#include "sdCard.h"
+#include "grblState.h"
 #include <device.h>
 #include <devicetree.h>
 #include <drivers/gpio.h>
@@ -90,7 +90,7 @@ namespace {
 
                         if (encoderEnter) {
                                 encoderEnter = false;
-                                sd::jogYP ();
+                                grbl::jog (grbl::JogDirection::yPositive);
                         }
                 }
         }

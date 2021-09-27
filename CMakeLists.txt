@@ -23,6 +23,7 @@ target_sources(app PRIVATE
     src/main.cc
     src/zephyrGrblPeripherals.cc
     src/stepperDriverSettings.cc
+    src/grblState.cc
     src/sdCard.cc
     src/display.cc
 
