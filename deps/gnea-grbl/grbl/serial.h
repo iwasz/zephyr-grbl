@@ -68,7 +68,7 @@ void serial_disable_irqs ();
 void serial_enable_irqs ();
 int serial_get_tx_line (uint32_t *buffer, uint8_t bufSize);
 bool serial_is_initialized ();
-
+bool serial_check_real_time_command(char data) ;
 
 #ifdef __cplusplus
 }

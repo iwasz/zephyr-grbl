@@ -36,8 +36,12 @@ namespace {
 
         gpio_callback encoderCallback;
         k_timer encoderDebounceTimer;
-        enum class EncoderDebounceState { none, a, b, enter };
+        enum class EncoderDebounceState { none = 0x00, a = 0x01, b = 0x02, enter = 0x04 };
         EncoderDebounceState encoderDebounceState{};
+
+        enum class EncoderDirection { none, left, right };
+        EncoderDirection encoderDirection{};
+        bool encoderEnter{};
 
         /**
          * ISR button.
@@ -62,23 +66,36 @@ namespace {
         }
 
         /**
-         * Kernel timer callback.
+         * Kernel timer callback. Caution! ISR context.
          */
         void encoderDebounceCb (struct k_timer *timer)
         {
                 ARG_UNUSED (timer);
 
                 if (encoderDebounceState == EncoderDebounceState::a && gpio_pin_get (encoderA, ENCODER_A_PIN)) {
-                        printk ("A");
+                        encoderDirection = EncoderDirection::left;
                 }
                 else if (encoderDebounceState == EncoderDebounceState::b && gpio_pin_get (encoderB, ENCODER_B_PIN)) {
-                        printk ("B");
+                        encoderDirection = EncoderDirection::right;
                 }
                 else if (encoderDebounceState == EncoderDebounceState::enter && gpio_pin_get (enter, ENCODER_ENTER_PIN)) {
-                        // printk ("E");
-                        sd::jogYN ();
+                        encoderEnter = true;
                 }
         }
+
+        void displayThread (void *, void *, void *)
+        {
+                while (true) {
+                        k_sleep (K_MSEC (40));
+
+                        if (encoderEnter) {
+                                encoderEnter = false;
+                                sd::jogYP ();
+                        }
+                }
+        }
+
+        K_THREAD_DEFINE (disp, 2048, displayThread, NULL, NULL, NULL, 14, 0, 0);
 } // namespace
 
 void init ()

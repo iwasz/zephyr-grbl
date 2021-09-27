@@ -73,7 +73,6 @@ constexpr int SD_CARD_STACK_SIZE = 32768;
 constexpr int SD_CARD_PRIORITY = 13; // The same as the main thread! Time slicing is ON!
 
 K_THREAD_DEFINE (sdrx, SD_CARD_STACK_SIZE, grblResponseThread, NULL, NULL, NULL, SD_CARD_PRIORITY, 0, 0);
-// K_THREAD_DEFINE (sdtx, SD_CARD_STACK_SIZE, grblRequestThread, NULL, NULL, NULL, SD_CARD_PRIORITY, 0, 0);
 K_MUTEX_DEFINE (machineMutex);
 
 // To make things easier.
@@ -105,7 +104,8 @@ TODO change namespace name to grbl
 */
 
 namespace sd {
-void executeLine (gsl::czstring s);
+void executeLine (gsl::czstring line);
+void executeCommand (char command);
 
 using namespace ls;
 
@@ -133,14 +133,22 @@ constexpr auto alarmMessage = [] (auto const &s) { return ctre::match<"^ALARM:(\
 constexpr auto errorMessage = [] (auto const &s) { return ctre::match<"^error:(\\d*)(\r\n)?$"> (s); };
 /// Verbose (responses to the "?")
 constexpr auto verboseMessage = [] (auto const &s) { return ctre::match<"^<([a-zA-Z]*)\\|MPos:(.*),(.*),(.*)\\|F:(\\d*).*(\r\n)?$"> (s); };
+constexpr auto idleVerbose = [] (auto const &s) { return ctre::match<"^<Idle.*(\r\n)?$"> (s); };
+constexpr auto jogVerbose = [] (auto const &s) { return ctre::match<"^<Jog.*(\r\n)?$"> (s); };
+constexpr auto alarmVerbose = [] (auto const &s) { return ctre::match<"^<Alarm.*(\r\n)?$"> (s); };
+
+constexpr char CMD_RESET = 0x18;
+constexpr char CMD_STATUS_REPORT = '?';
+constexpr char CMD_CYCLE_START = '~';
+constexpr char CMD_FEED_HOLD = '!';
 
 /**
  * Tracks GRBL's state. A minimal subset of what the UGS can do.
  */
 auto grblMachine
         = machine (state ("init"_ST, entry ([] {
-                                  executeLine ("\030");
                                   printk ("# init\r\n");
+                                  executeCommand (CMD_RESET);
                           }),
                           transition ("ready"_ST, welcomeMessage)),
 
@@ -151,15 +159,32 @@ auto grblMachine
                           ),
 
                    state ("locked"_ST, entry ([] (auto) { // Automatic unlocking state.
-                                  executeLine ("$X\r\n"); // Send command to the GRBL.
                                   printk ("# locked\r\n");
+                                  executeLine ("$X\r\n"); // Send command to the GRBL.
                           }),
                           transition ("ready"_ST, unlockedMessage)), // Transition back to ready upon receiving a response.
 
-                   state ("jogYP"_ST, entry ([] (auto) { sd::executeLine ("G21G91Y10F5000\r\n"); }), transition ("ready"_ST, ok)),
-                   state ("jogYN"_ST, entry ([] (auto) { sd::executeLine ("G21G91Y-10F5000\r\n"); }), transition ("ready"_ST, ok)),
+                   state ("jogYP"_ST, entry ([] (auto) {
+                                  printk ("# yp\r\n");
+                                  sd::executeLine ("$J=G21G91Y10F500\r\n");
+                          }),
+                          transition ("waitidle"_ST, ok)),
 
-                   state ("error"_ST, entry ([] () {}), transition ("ready"_ST, [] (string const &s) { return s == ""; })),
+                   state ("jogYN"_ST, entry ([] (auto) {
+                                  printk ("# yn\r\n");
+                                  sd::executeLine ("$J=G21G91Y-10F500\r\n");
+                          }),
+                          transition ("waitidle"_ST, ok)),
+
+                   state ("waitidle"_ST, entry ([] {
+                                  printk ("# wi\r\n");
+                                  executeCommand (CMD_STATUS_REPORT);
+                                  k_sleep (K_MSEC (250));
+                          }),
+                          transition ("ready"_ST, idleVerbose), transition ("alarm"_ST, alarmVerbose),
+                          transition ("waitidle"_ST, [] (auto) { return true; })),
+
+                   state ("alarm"_ST, entry ([] { printk ("# ALARM"); }), transition ("ready"_ST, [] (string const &s) { return s == ""; })),
                    state ("waitrsp"_ST, entry ([] () {}), transition ("ready"_ST, [] (string const &s) { return s == ""; })));
 
 void jogYP ()
@@ -302,6 +327,18 @@ void executeLine (gsl::czstring line)
         // Make sure the file has been executed entirely.
         // serial_reset_read_buffer ();
         // serial_reset_transmit_buffer ();
+        serial_enable_irqs ();
+}
+
+void executeCommand (char command)
+{
+        if (!serial_is_initialized ()) {
+                LOG_WRN ("Serial subsystem is required for SD card to operate.");
+                return;
+        }
+
+        serial_disable_irqs ();
+        serial_check_real_time_command (command);
         serial_enable_irqs ();
 }
 
