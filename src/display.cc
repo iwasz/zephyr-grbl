@@ -15,6 +15,7 @@
 #include <display/cfb.h>
 #include <drivers/gpio.h>
 #include <logging/log.h>
+#include <optional>
 #include <zephyr.h>
 
 LOG_MODULE_REGISTER (display);
@@ -46,8 +47,11 @@ namespace {
 
         gpio_callback encoderCallback;
         k_timer encoderDebounceTimer;
-        enum class EncoderDebounceState { none = 0x00, a = 0x01, b = 0x02, enter = 0x04 };
-        EncoderDebounceState encoderDebounceState{};
+        // enum class EncoderDebounceState { none = 0x00, a = 0x01, b = 0x02, enter = 0x04 };
+        // EncoderDebounceState encoderDebounceState{};
+        bool aDebounceState{};
+        bool bDebounceState{};
+        bool eDebounceState{};
 
         enum class EncoderDirection { none, left, right };
         EncoderDirection encoderDirection{};
@@ -61,18 +65,18 @@ namespace {
                 ARG_UNUSED (cb);
 
                 if (port == encoderA && (pins & BIT (ENCODER_A_PIN))) {
-                        encoderDebounceState = EncoderDebounceState::a;
+                        aDebounceState = true;
+                        k_timer_start (&encoderDebounceTimer, K_USEC (3000), K_NO_WAIT);
                 }
-
-                if (port == encoderB && (pins & BIT (ENCODER_B_PIN))) {
-                        encoderDebounceState = EncoderDebounceState::b;
+                else if (port == encoderB && (pins & BIT (ENCODER_B_PIN))) {
+                        bDebounceState = true;
+                        k_timer_start (&encoderDebounceTimer, K_USEC (3000), K_NO_WAIT);
                 }
 
                 if (port == enter && (pins & BIT (ENCODER_ENTER_PIN))) {
-                        encoderDebounceState = EncoderDebounceState::enter;
+                        eDebounceState = true;
+                        k_timer_start (&encoderDebounceTimer, K_MSEC (30), K_NO_WAIT);
                 }
-
-                k_timer_start (&encoderDebounceTimer, K_MSEC (2), K_NO_WAIT);
         }
 
         /**
@@ -82,13 +86,27 @@ namespace {
         {
                 ARG_UNUSED (timer);
 
-                if (encoderDebounceState == EncoderDebounceState::a && gpio_pin_get (encoderA, ENCODER_A_PIN)) {
-                        encoderDirection = EncoderDirection::left;
+                bool a = gpio_pin_get (encoderA, ENCODER_A_PIN);
+                bool b = gpio_pin_get (encoderB, ENCODER_B_PIN);
+
+                // A state is consistent
+                if (aDebounceState && a) {
+                        aDebounceState = false;
+
+                        if (!b) {
+                                encoderDirection = EncoderDirection::right;
+                        }
                 }
-                else if (encoderDebounceState == EncoderDebounceState::b && gpio_pin_get (encoderB, ENCODER_B_PIN)) {
-                        encoderDirection = EncoderDirection::right;
+                else if (bDebounceState && b) {
+                        bDebounceState = false;
+
+                        if (!a) {
+                                encoderDirection = EncoderDirection::left;
+                        }
                 }
-                else if (encoderDebounceState == EncoderDebounceState::enter && gpio_pin_get (enter, ENCODER_ENTER_PIN)) {
+
+                if (eDebounceState && gpio_pin_get (enter, ENCODER_ENTER_PIN)) {
+                        eDebounceState = false;
                         encoderEnter = true;
                 }
         }
@@ -206,10 +224,10 @@ constexpr auto right = [] (Event e) { return e == Event::right; };
 
 using namespace ls;
 auto menuMachine = machine ( // Jog menu
-        state ("JOG_YP"_ST, entry ([] { menu (0); }), transition ("JOG_YN"_ST, enter)),
-        state ("JOG_YN"_ST, entry ([] { menu (1); }), transition ("JOG_XP"_ST, enter)),
-        state ("JOG_XP"_ST, entry ([] { menu (2); }), transition ("JOG_XN"_ST, enter)),
-        state ("JOG_XN"_ST, entry ([] { menu (3); }), transition ("JOG_YP"_ST, enter)));
+        state ("JOG_YP"_ST, entry ([] { menu (0); }), transition ("JOG_YN"_ST, left), transition ("JOG_XN"_ST, right)),
+        state ("JOG_YN"_ST, entry ([] { menu (1); }), transition ("JOG_XP"_ST, left), transition ("JOG_YP"_ST, right)),
+        state ("JOG_XP"_ST, entry ([] { menu (2); }), transition ("JOG_XN"_ST, left), transition ("JOG_YN"_ST, right)),
+        state ("JOG_XN"_ST, entry ([] { menu (3); }), transition ("JOG_YP"_ST, left), transition ("JOG_XP"_ST, right)));
 
 void displayThread (void *, void *, void *)
 {
@@ -222,14 +240,19 @@ void displayThread (void *, void *, void *)
                 if (disp::encoderEnter) {
                         disp::encoderEnter = false;
                         // grbl::jog (grbl::JogDirection::yPositive);
-                        menuMachine.run (Event::enter);
+                        // menuMachine.run (Event::enter);
+                        printk ("E");
                 }
 
                 if (disp::encoderDirection == EncoderDirection::left) {
-                        menuMachine.run (Event::left);
+                        encoderDirection = disp::EncoderDirection::none;
+                        // menuMachine.run (Event::left);
+                        printk ("L");
                 }
                 else if (disp::encoderDirection == EncoderDirection::right) {
-                        menuMachine.run (Event::right);
+                        encoderDirection = disp::EncoderDirection::none;
+                        // menuMachine.run (Event::right);
+                        printk ("R");
                 }
 
                 k_sleep (K_MSEC (40));
