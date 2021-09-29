@@ -166,16 +166,16 @@ auto grblMachine
                           }),
                           transition ("ready"_ST, unlockedMessage)), // Transition back to ready upon receiving a response.
 
-                   state ("jog"_ST, entry ([rs = requestedState.jogDirection] (auto) {
+                   state ("jog"_ST, entry ([] (auto) {
                                   printk ("# jog\r\n");
 
-                                  switch (rs) {
+                                  switch (requestedState.jogDirection) {
                                   case JogDirection::xPositive:
-                                          grbl::executeLine ("$J=G21G91Y10F500\r\n");
+                                          grbl::executeLine ("$J=G21G91X10F500\r\n");
                                           break;
 
                                   case JogDirection::xNegative:
-                                          grbl::executeLine ("$J=G21G91Y-10F500\r\n");
+                                          grbl::executeLine ("$J=G21G91X-10F500\r\n");
                                           break;
 
                                   case JogDirection::yPositive:
