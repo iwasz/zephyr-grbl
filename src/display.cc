@@ -178,12 +178,12 @@ void displayThread (void *, void *, void *)
         // Enter into initial state, and execute its entry state (that displays the menu).
         menuMachine.run (Event::none);
         bool prevE{};
-        uint8_t state = 0x01;
-
+        uint8_t state = 0x04;
         uint8_t output{};
+        bool first = true;
 
         while (true) {
-                constexpr std::array<std::array<uint8_t, 4>, 4> ENC = {{
+                constexpr std::array<std::array<uint8_t, 4>, 5> ENC = {{
                         {0x00, 0x01, 0x02, 0x01},
                         {0x10, 0x01, 0x01, 0x23},
                         {0x20, 0x01, 0x02, 0x13},
@@ -193,7 +193,12 @@ void displayThread (void *, void *, void *)
                 uint8_t event = gpio_pin_get (encoderB, ENCODER_B_PIN) << 1 | gpio_pin_get (encoderA, ENCODER_A_PIN);
                 auto x = ENC[state][event];
                 state = x & 0x03;
-                output = x & 0x30;
+
+                if (!first) {
+                        output = x & 0x30;
+                }
+
+                first = false;
 
                 if (bool e = gpio_pin_get (encoderEnter, ENCODER_ENTER_PIN); e != prevE) {
                         prevE = e;
