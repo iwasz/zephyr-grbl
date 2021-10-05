@@ -10,6 +10,7 @@
 #include "Machine.h"
 #include "cfb_font_oldschool.h"
 #include "grblState.h"
+#include "sdCard.h"
 #include <array>
 #include <device.h>
 #include <devicetree.h>
@@ -129,20 +130,52 @@ void init ()
  */
 namespace {
 
-auto menu = [] (int option) {
+enum class MenuType { main, jog, sdCard };
+
+auto menu = [] (MenuType menuType, int selected) {
         cfb_framebuffer_clear (disp::display, false);
         uint16_t margin = 2;
 
-        cfb_print (disp::display, "1. Y+", margin, 0);
-        cfb_print (disp::display, "2. Y-", margin, 8);
-        cfb_print (disp::display, "3. X+", margin, 16);
-        cfb_print (disp::display, "4. X-", margin, 24);
-        cfb_print (disp::display, "5. Ala ma kota", margin, 32);
+        switch (menuType) {
+        case MenuType::main:
+                cfb_print (disp::display, "  Print from SD", margin, 0);
+                cfb_print (disp::display, "  Jogging menu", margin, 8);
+                break;
 
-        cfb_print (disp::display, ">", 2, option * 8);
+        case MenuType::jog:
+                cfb_print (disp::display, "  Y+", margin, 0);
+                cfb_print (disp::display, "  Y-", margin, 8);
+                cfb_print (disp::display, "  X+", margin, 16);
+                cfb_print (disp::display, "  X-", margin, 24);
+                cfb_print (disp::display, "  Back", margin, 32);
+                break;
+
+        default:
+                break;
+        }
+
+        cfb_print (disp::display, ">", 2, selected * 8);
         cfb_framebuffer_finalize (disp::display);
 };
 
+/**
+ * Prints file entries from the SD.
+ */
+void sdMenu (int selected)
+{
+        cfb_framebuffer_clear (disp::display, false);
+        uint16_t margin = 2;
+        cfb_print (disp::display, "  Back", margin, 0);
+
+        sd::lsdir ("");
+
+        cfb_print (disp::display, ">", 2, selected * 8);
+        cfb_framebuffer_finalize (disp::display);
+}
+
+/**
+ *
+ */
 enum class Event { none, left, right, enter };
 
 constexpr auto enter = [] (Event e) { return e == Event::enter; };
@@ -150,26 +183,59 @@ constexpr auto left = [] (Event e) { return e == Event::left; };
 constexpr auto right = [] (Event e) { return e == Event::right; };
 
 using namespace ls;
-auto menuMachine = machine (                          // Jog menu
-        state ("JOG_YP"_ST, entry ([] { menu (0); }), // Jog along Y axis in positive direction.
-               transition ("JOG_YN"_ST, left),        // Prev menu item
-               transition ("JOG_XN"_ST, right),       // Next menu item
+auto menuMachine = machine (
+        /*--------------------------------------------------------------------------*/
+        /* Main menu                                                                */
+        /*--------------------------------------------------------------------------*/
+
+        state ("MAIN_SD"_ST, entry ([] { menu (MenuType::main, 0); }), //
+               transition ("MAIN_JOG"_ST, left),                       // Next menu item
+               transition ("MAIN_JOG"_ST, right),                      // Prev menu item
+               transition ("JOG_YP"_ST, enter)),                       // Enter
+
+        state ("MAIN_JOG"_ST, entry ([] { menu (MenuType::main, 1); }), //
+               transition ("MAIN_SD"_ST, left),                         // Next menu item
+               transition ("MAIN_SD"_ST, right),                        // Prev menu item
+               transition ("JOG_YP"_ST, enter)),                        // Enter
+
+        /*--------------------------------------------------------------------------*/
+        /* SD card menu                                                             */
+        /*--------------------------------------------------------------------------*/
+
+        state ("SD"_ST, entry ([] { sdMenu (0); }) //
+               /* transition ("MAIN_SD"_ST, left),                   // Next menu item
+               transition ("MAIN_SD"_ST, right),                  // Prev menu item
+               transition ("JOG_YP"_ST, enter) */),                  // Enter
+
+        /*--------------------------------------------------------------------------*/
+        /* Jog menu                                                                 */
+        /*--------------------------------------------------------------------------*/
+
+        state ("JOG_YP"_ST, entry ([] { menu (MenuType::jog, 0); }), // Jog along Y axis in positive direction.
+               transition ("JOG_YN"_ST, left),                       // Next menu item
+               transition ("JOG_BACK"_ST, right),                    // Prev menu item
                transition ("JOG_YP"_ST, enter, [] (auto) { grbl::jog (grbl::JogDirection::yPositive); })),
 
-        state ("JOG_YN"_ST, entry ([] { menu (1); }), //
-               transition ("JOG_XP"_ST, left),        //
-               transition ("JOG_YP"_ST, right),       //
+        state ("JOG_YN"_ST, entry ([] { menu (MenuType::jog, 1); }), //
+               transition ("JOG_XP"_ST, left),                       //
+               transition ("JOG_YP"_ST, right),                      //
                transition ("JOG_YN"_ST, enter, [] (auto) { grbl::jog (grbl::JogDirection::yNegative); })),
 
-        state ("JOG_XP"_ST, entry ([] { menu (2); }), //
-               transition ("JOG_XN"_ST, left),        //
-               transition ("JOG_YN"_ST, right),       //
+        state ("JOG_XP"_ST, entry ([] { menu (MenuType::jog, 2); }), //
+               transition ("JOG_XN"_ST, left),                       //
+               transition ("JOG_YN"_ST, right),                      //
                transition ("JOG_XP"_ST, enter, [] (auto) { grbl::jog (grbl::JogDirection::xPositive); })),
 
-        state ("JOG_XN"_ST, entry ([] { menu (3); }), //
-               transition ("JOG_YP"_ST, left),        //
-               transition ("JOG_XP"_ST, right),       //
-               transition ("JOG_XN"_ST, enter, [] (auto) { grbl::jog (grbl::JogDirection::yPositive); })));
+        state ("JOG_XN"_ST, entry ([] { menu (MenuType::jog, 3); }),                                       //
+               transition ("JOG_BACK"_ST, left),                                                           //
+               transition ("JOG_XP"_ST, right),                                                            //
+               transition ("JOG_XN"_ST, enter, [] (auto) { grbl::jog (grbl::JogDirection::yPositive); })), //
+
+        state ("JOG_BACK"_ST, entry ([] { menu (MenuType::jog, 4); }), //
+               transition ("JOG_YP"_ST, left),                         //
+               transition ("JOG_XN"_ST, right),                        //
+               transition ("MAIN_JOG"_ST, enter))                       //
+);
 
 void displayThread (void *, void *, void *)
 {

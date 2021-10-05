@@ -37,7 +37,7 @@ void init ()
 {
         /* raw disk i/o */
         do {
-                static gsl::czstring disk_pdrv = "SD";
+                static const char *disk_pdrv = "SD";
                 uint64_t memory_size_mb;
                 uint32_t block_count;
                 uint32_t block_size;
@@ -57,10 +57,10 @@ void init ()
                         LOG_ERR ("Unable to get sector size");
                         break;
                 }
-                LOG_INF ("Sector size %u\n", block_size);
+                printk ("Sector size %u\n", block_size);
 
                 memory_size_mb = (uint64_t)block_count * block_size;
-                LOG_INF ("Memory Size(MB) %u\n", (uint32_t)(memory_size_mb >> 20));
+                printk ("Memory Size(MB) %u\n", (uint32_t)(memory_size_mb >> 20));
         } while (0);
 
         mp.mnt_point = disk_mount_pt;
@@ -68,11 +68,11 @@ void init ()
         int res = fs_mount (&mp);
 
         if (res == FR_OK) {
-                LOG_INF ("Disk mounted.\n");
+                printk ("Disk mounted.\n");
                 lsdir (disk_mount_pt);
         }
         else {
-                LOG_ERR ("Error mounting disk.\n");
+                printk ("Error mounting disk.\n");
         }
 }
 
@@ -85,15 +85,16 @@ int lsdir (gsl::czstring path)
         struct fs_dir_t dirp;
         static struct fs_dirent entry;
 
+        fs_dir_t_init (&dirp);
+
         /* Verify fs_opendir() */
         res = fs_opendir (&dirp, path);
         if (res) {
-                LOG_ERR ("Error opening dir %s [%d]\n", path, res);
+                printk ("Error opening dir %s [%d]\n", path, res);
                 return res;
         }
 
-        LOG_INF ("\nListing dir %s ...\n", path);
-
+        printk ("\nListing dir %s ...\n", path);
         for (;;) {
                 /* Verify fs_readdir() */
                 res = fs_readdir (&dirp, &entry);
@@ -104,10 +105,10 @@ int lsdir (gsl::czstring path)
                 }
 
                 if (entry.type == FS_DIR_ENTRY_DIR) {
-                        LOG_INF ("[DIR ] %s\n", entry.name);
+                        printk ("[DIR ] %s\n", entry.name);
                 }
                 else {
-                        LOG_INF ("[FILE] %s (size = %zu)\n", entry.name, entry.size);
+                        printk ("[FILE] %s (size = %zu)\n", entry.name, entry.size);
                 }
         }
 

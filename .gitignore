@@ -13,3 +13,5 @@ fp-info-cache
 plotter-backups
 freecad/backup
 pcb/plotter/fp-lib-table
+misc/spi-test
+pcb/plotter/gerber*/*

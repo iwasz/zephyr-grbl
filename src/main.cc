@@ -29,6 +29,7 @@ void testStepperMotors ();
 void main ()
 {
         disp::init ();
+        sd::init ();
         mcuPeripheralsInit ();
         drv::init ();
 
