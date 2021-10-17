@@ -1,5 +1,5 @@
 # Project goals
-* [ ] Port GRBL to Zephyr and make it work with the UGS on my own hardware. 
+* [x] Port GRBL to Zephyr and make it work with the UGS on my own hardware. 
 * [ ] Be able to draw complex shapes and as cleanly as [the original AxiDraw](https://www.youtube.com/watch?v=5492ZjivAQ0&t=27s).
 * [x] Emulate serial port over USB.
 * [ ] Display a menu and whatnot. Like on Prusa printer. 
@@ -106,3 +106,4 @@
     * [ ] Reset
 * [ ] Possibly implement (I mean anable in the MCUBoot) the DFU over USB.
 * [ ] Some recent changes caused that shell reacts on every second keypress only. It happened about when I worked on MCUBoot.
+* [ ]  The board does not seem to do POR. Haveto be manually reset.
