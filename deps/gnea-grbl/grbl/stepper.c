@@ -1206,7 +1206,7 @@ float st_get_realtime_rate()
 void setServoPositionSteps (int absoluteSteps)
 {
         // I'm assuming here, that a servo accepts pulses from 1000µs to 2000µs. This is where the 1000.0 factor comes from.
-        float pulseUs = 1000.0F * (((float)absoluteSteps) / ((float)(DEFAULT_Z_STEPS_PER_MM))) / MAX_Z_REACH_MM + 1000.0F;
+        float pulseUs = 1000.0F * (((float)absoluteSteps) / ((float)(DEFAULT_Z_STEPS_PER_MM))) / DEFAULT_Z_MAX_TRAVEL + 1000.0F;
 
         // But I noticed, that some servos can accept a little bit shorter and longer pulses as well.
         if (pulseUs > SERVO_PULSE_MAX) {

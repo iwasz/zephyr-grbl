@@ -611,7 +611,6 @@
 #define DEFAULT_HOMING_PULLOFF 1.0         // mm
 
 #define USE_SERVO_FOR_Z
-#define MAX_Z_REACH_MM 6 // 6 mm is the maximum height the Z can travel to
 #define SERVO_PULSE_MIN 1100.0F
 #define SERVO_PULSE_MAX 1900.0F
 #endif

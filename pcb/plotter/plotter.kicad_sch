@@ -2339,7 +2339,7 @@
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid 96aee14d-c54d-4217-8ee6-c7ee3d75480a)
   )
-  (text "Mark ON and OFF positions on the PCB \nMake some merkings making it obvius how to put the drivers."
+  (text "Mark ON and OFF positions on the PCB \nMake some merkings making it obvius how to put the drivers.\nmove console connector away from the edge"
     (at 130.81 -5.08 0)
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid a5f9e2c2-f1ed-4eb7-8201-72d559ef360d)
