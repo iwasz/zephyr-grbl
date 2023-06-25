@@ -33,11 +33,11 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define HW_TIMER_POLARITY_NORMAL (0 << 0)
-#define HW_TIMER_POLARITY_INVERTED (1 << 0)
-#define HW_TIMER_POLARITY_MASK 0x1
-#define STM32_HW_TIMER_COMPLEMENTARY (1U << 8)
-#define HW_TIMER_STM32_COMPLEMENTARY (1U << 8)
+#define HW_TIMER_POLARITY_NORMAL          (0 << 0)
+#define HW_TIMER_POLARITY_INVERTED        (1 << 0)
+#define HW_TIMER_POLARITY_MASK            0x1
+#define STM32_HW_TIMER_COMPLEMENTARY      (1U << 8)
+#define HW_TIMER_STM32_COMPLEMENTARY      (1U << 8)
 #define STM32_HW_TIMER_COMPLEMENTARY_MASK 0x100
 
 #ifdef __cplusplus
@@ -53,9 +53,9 @@ extern "C" {
 /** @cond INTERNAL_HIDDEN */
 /* Bit 0 is used for HW_TIMER_POLARITY_NORMAL/HW_TIMER_POLARITY_INVERTED */
 #define HW_TIMER_CAPTURE_TYPE_SHIFT 1U
-#define HW_TIMER_CAPTURE_TYPE_MASK (3U << HW_TIMER_CAPTURE_TYPE_SHIFT)
+#define HW_TIMER_CAPTURE_TYPE_MASK  (3U << HW_TIMER_CAPTURE_TYPE_SHIFT)
 #define HW_TIMER_CAPTURE_MODE_SHIFT 3U
-#define HW_TIMER_CAPTURE_MODE_MASK (1U << HW_TIMER_CAPTURE_MODE_SHIFT)
+#define HW_TIMER_CAPTURE_MODE_MASK  (1U << HW_TIMER_CAPTURE_MODE_SHIFT)
 /** @endcond */
 
 /** HW_TIMER pin capture captures period. */
@@ -449,11 +449,6 @@ typedef void (*hw_timer_set_update_callback_t)(const struct device *dev, timer_c
 __subsystem struct hw_timer_driver_api {
 	hw_timer_set_cycles_t set_cycles;
 	hw_timer_get_cycles_per_sec_t get_cycles_per_sec;
-#ifdef CONFIG_HW_TIMER_CAPTURE
-	hw_timer_configure_capture_t configure_capture;
-	hw_timer_enable_capture_t enable_capture;
-	hw_timer_disable_capture_t disable_capture;
-#endif /* CONFIG_HW_TIMER_CAPTURE */
 	hw_timer_set_update_callback_t set_update_callback;
 };
 /** @endcond */

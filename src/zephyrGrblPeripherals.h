@@ -19,7 +19,7 @@
 #include <zephyr/usb/usb_device.h>
 
 #define PWM_CHANNEL 1
-#define PWM_FLAGS HW_TIMER_POLARITY_NORMAL
+// #define PWM_FLAGS HW_TIMER_POLARITY_NORMAL
 
 /****************************************************************************/
 

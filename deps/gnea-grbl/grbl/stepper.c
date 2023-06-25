@@ -259,15 +259,15 @@ void st_wake_up()
 
   // Enable Stepper Driver Interrupt
         // TIMSK1 |= (1 << OCIE1A);
-        hw_timer_set_update_callback (timerCallbackDevice, TIMER1_COMPA_vect);
+      //   hw_timer_set_update_callback (timerCallbackDevice, TIMER1_COMPA_vect);
 
-        // Turn the timer on with whatever period. Only to fire the ISR.
-        int ret = hw_timer_set_cycles (timerCallbackDevice, PWM_CHANNEL, 1000, settings.pulse_microseconds, PWM_FLAGS);
+      //   // Turn the timer on with whatever period. Only to fire the ISR.
+      //   int ret = hw_timer_set_cycles (timerCallbackDevice, PWM_CHANNEL, 1000, settings.pulse_microseconds, PWM_FLAGS);
 
-        if (ret) {
-                LOG_ERR ("hw_timer_pin_set_usec failed with %d \n", ret);
-                return;
-	}
+      //   if (ret) {
+      //           LOG_ERR ("hw_timer_pin_set_usec failed with %d \n", ret);
+      //           return;
+	    // }
 }
 
 
@@ -275,7 +275,7 @@ void st_wake_up()
 void st_go_idle()
 {
   // Disable Stepper Driver Interrupt. Allow Stepper Port Reset Interrupt to finish, if active.
-  hw_timer_set_update_callback (timerCallbackDevice, NULL);
+  // hw_timer_set_update_callback (timerCallbackDevice, NULL);
   busy = false;
 
   // Set stepper driver idle state, disabled or enabled, depending on settings and circumstances.
@@ -415,13 +415,13 @@ void TIMER1_COMPA_vect ()
       // Initialize step segment timing per step and load number of steps to execute.
       // OCR1A = st.exec_segment->cycles_per_tick;
 
-      int ret = hw_timer_set (timerCallbackDevice, PWM_CHANNEL, st.exec_segment->periodUs,
-                                       settings.pulse_microseconds, PWM_FLAGS);
+    //   int ret = hw_timer_set (timerCallbackDevice, PWM_CHANNEL, st.exec_segment->periodUs,
+    //                                    settings.pulse_microseconds, PWM_FLAGS);
 
-      if (ret) {
-		LOG_ERR ("Error %d: failed to set pulse width", ret);
-		return;
-      }
+    //   if (ret) {
+		// LOG_ERR ("Error %d: failed to set pulse width", ret);
+		// return;
+    //   }
 
       st.step_count = st.exec_segment->n_step; // NOTE: Can sometimes be zero when moving slow.
       // If the new segment starts a new planner block, initialize stepper variables and counters.
