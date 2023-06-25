@@ -7,27 +7,30 @@
  ****************************************************************************/
 
 #include "zephyrGrblPeripherals.h"
+#include <zephyr/sys/printk.h>
 
 LOG_MODULE_REGISTER (mcu_per);
 
-const struct device *dirX{};
-const struct device *stepX{};
-const struct device *enableX{};
-const struct device *nssX{};
+const struct gpio_dt_spec leftSwitch = GPIO_DT_SPEC_GET (DT_PATH (motor1_pins, dir), gpios);
+const struct gpio_dt_spec rightSwitch = GPIO_DT_SPEC_GET (DT_PATH (motor1_pins, dir), gpios);
+const struct gpio_dt_spec topSwitch = GPIO_DT_SPEC_GET (DT_PATH (motor1_pins, dir), gpios);
+const struct gpio_dt_spec bottomSwitch = GPIO_DT_SPEC_GET (DT_PATH (motor1_pins, dir), gpios);
+const struct gpio_dt_spec motor1Stall = GPIO_DT_SPEC_GET (DT_PATH (motor1_pins, dir), gpios);
+const struct gpio_dt_spec motor2Stall = GPIO_DT_SPEC_GET (DT_PATH (motor1_pins, dir), gpios);
 
-const struct device *dirY{};
-const struct device *stepY{};
-const struct device *enableY{};
-const struct device *nssY{};
+const struct gpio_dt_spec dirX = GPIO_DT_SPEC_GET (DT_PATH (motor1_pins, dir), gpios);
+const struct gpio_dt_spec stepX = GPIO_DT_SPEC_GET (DT_PATH (motor1_pins, step), gpios);
+const struct gpio_dt_spec enableX = GPIO_DT_SPEC_GET (DT_PATH (motor1_pins, enable), gpios);
+const struct gpio_dt_spec nssX = GPIO_DT_SPEC_GET (DT_PATH (motor1_pins, nss), gpios);
 
-// const struct device *dirZ{};
-// const struct device *stepZ{};
-// const struct device *enableZ{};
-// const struct device *nssZ{};
+const struct gpio_dt_spec dirY = GPIO_DT_SPEC_GET (DT_PATH (motor2_pins, dir), gpios);
+const struct gpio_dt_spec stepY = GPIO_DT_SPEC_GET (DT_PATH (motor2_pins, step), gpios);
+const struct gpio_dt_spec enableY = GPIO_DT_SPEC_GET (DT_PATH (motor2_pins, enable), gpios);
+const struct gpio_dt_spec nssY = GPIO_DT_SPEC_GET (DT_PATH (motor2_pins, nss), gpios);
 
 const device *spi{};
 const device *timerCallbackDevice{};
-const device *zAxisPwm{};
+const struct pwm_dt_spec zAxisPwm = PWM_DT_SPEC_GET (DT_NODELABEL (servopwm));
 
 /**
  *
@@ -35,126 +38,96 @@ const device *zAxisPwm{};
 void mcuPeripheralsInit ()
 {
         int ret{};
-        spi = device_get_binding (DT_LABEL (DT_ALIAS (motorspi)));
+        spi = DEVICE_DT_GET (DT_ALIAS (motorspi));
 
         if (!spi) {
                 printk ("Could not find SPI driver\n");
                 return;
         }
 
-        dirX = device_get_binding (MOTORX_DIR_LABEL);
+        /*--------------------------------------------------------------------------*/
 
-        if (dirX == NULL) {
+        if (!gpio_is_ready_dt (&dirX)) {
+                printk ("Error\r\n");
                 return;
         }
 
-        ret = gpio_pin_configure (dirX, MOTORX_DIR_PIN, GPIO_OUTPUT_ACTIVE | MOTORX_DIR_FLAGS);
+        if (int const ret = gpio_pin_configure_dt (&dirX, GPIO_OUTPUT_ACTIVE); ret != 0) {
+                printk ("Error\r\n");
+                return;
+        }
 
-        if (ret < 0) {
+        if (!gpio_is_ready_dt (&stepX)) {
+                printk ("Error\r\n");
+                return;
+        }
+
+        if (int const ret = gpio_pin_configure_dt (&stepX, GPIO_OUTPUT_ACTIVE); ret != 0) {
+                printk ("Error\r\n");
+                return;
+        }
+
+        if (!gpio_is_ready_dt (&enableX)) {
+                printk ("Error\r\n");
+                return;
+        }
+
+        if (int const ret = gpio_pin_configure_dt (&enableX, GPIO_OUTPUT_INACTIVE); ret != 0) {
+                printk ("Error\r\n");
+                return;
+        }
+
+        if (!gpio_is_ready_dt (&nssX)) {
+                printk ("Error\r\n");
+                return;
+        }
+
+        if (int const ret = gpio_pin_configure_dt (&nssX, GPIO_OUTPUT_INACTIVE); ret != 0) {
+                printk ("Error\r\n");
                 return;
         }
 
         /*--------------------------------------------------------------------------*/
 
-        stepX = device_get_binding (MOTORX_STEP_LABEL);
-
-        if (stepX == NULL) {
+        if (!gpio_is_ready_dt (&dirY)) {
+                printk ("Error\r\n");
                 return;
         }
 
-        ret = gpio_pin_configure (stepX, MOTORX_STEP_PIN, GPIO_OUTPUT_ACTIVE | MOTORX_STEP_FLAGS);
-
-        if (ret < 0) {
+        if (int const ret = gpio_pin_configure_dt (&dirY, GPIO_OUTPUT_ACTIVE); ret != 0) {
+                printk ("Error\r\n");
                 return;
         }
 
-        /*--------------------------------------------------------------------------*/
-
-        enableX = device_get_binding (MOTORX_ENABLE_LABEL);
-
-        if (enableX == NULL) {
+        if (!gpio_is_ready_dt (&stepY)) {
+                printk ("Error\r\n");
                 return;
         }
 
-        ret = gpio_pin_configure (enableX, MOTORX_ENABLE_PIN, GPIO_OUTPUT_ACTIVE | MOTORX_ENABLE_FLAGS);
-
-        if (ret < 0) {
+        if (int const ret = gpio_pin_configure_dt (&stepY, GPIO_OUTPUT_ACTIVE); ret != 0) {
+                printk ("Error\r\n");
                 return;
         }
 
-        /*--------------------------------------------------------------------------*/
-
-        nssX = device_get_binding (MOTORX_NSS_LABEL);
-
-        if (nssX == NULL) {
+        if (!gpio_is_ready_dt (&enableY)) {
+                printk ("Error\r\n");
                 return;
         }
 
-        ret = gpio_pin_configure (nssX, MOTORX_NSS_PIN, GPIO_OUTPUT_ACTIVE | MOTORX_NSS_FLAGS);
-
-        if (ret < 0) {
+        if (int const ret = gpio_pin_configure_dt (&enableY, GPIO_OUTPUT_INACTIVE); ret != 0) {
+                printk ("Error\r\n");
                 return;
         }
 
-        gpio_pin_set (enableX, MOTORX_ENABLE_PIN, false);
-
-        /*--------------------------------------------------------------------------*/
-
-        dirY = device_get_binding (MOTORY_DIR_LABEL);
-
-        if (dirY == NULL) {
+        if (!gpio_is_ready_dt (&nssY)) {
+                printk ("Error\r\n");
                 return;
         }
 
-        ret = gpio_pin_configure (dirY, MOTORY_DIR_PIN, GPIO_OUTPUT_ACTIVE | MOTORY_DIR_FLAGS);
-
-        if (ret < 0) {
+        if (int const ret = gpio_pin_configure_dt (&nssY, GPIO_OUTPUT_INACTIVE); ret != 0) {
+                printk ("Error\r\n");
                 return;
         }
-
-        /*--------------------------------------------------------------------------*/
-
-        stepY = device_get_binding (MOTORY_STEP_LABEL);
-
-        if (stepY == NULL) {
-                return;
-        }
-
-        ret = gpio_pin_configure (stepY, MOTORY_STEP_PIN, GPIO_OUTPUT_ACTIVE | MOTORY_STEP_FLAGS);
-
-        if (ret < 0) {
-                return;
-        }
-
-        /*--------------------------------------------------------------------------*/
-
-        enableY = device_get_binding (MOTORY_ENABLE_LABEL);
-
-        if (enableY == NULL) {
-                return;
-        }
-
-        ret = gpio_pin_configure (enableY, MOTORY_ENABLE_PIN, GPIO_OUTPUT_ACTIVE | MOTORY_ENABLE_FLAGS);
-
-        if (ret < 0) {
-                return;
-        }
-
-        /*--------------------------------------------------------------------------*/
-
-        nssY = device_get_binding (MOTORY_NSS_LABEL);
-
-        if (nssY == NULL) {
-                return;
-        }
-
-        ret = gpio_pin_configure (nssY, MOTORY_NSS_PIN, GPIO_OUTPUT_ACTIVE | MOTORY_NSS_FLAGS);
-
-        if (ret < 0) {
-                return;
-        }
-
-        gpio_pin_set (enableY, MOTORY_ENABLE_PIN, false);
 
         /*--------------------------------------------------------------------------*/
 
@@ -175,14 +148,14 @@ void mcuPeripheralsInit ()
 
         /*--------------------------------------------------------------------------*/
 
-        zAxisPwm = device_get_binding (DT_PROP (DT_ALIAS (servopwm), label));
-
-        if (!zAxisPwm) {
+        if (!device_is_ready (zAxisPwm.dev)) {
                 LOG_ERR ("No axis Z PWM device.");
                 return;
         }
 
-        ret = pwm_pin_set_usec (zAxisPwm, 3, 20 * 1000, 1500, PWM_POLARITY_NORMAL);
+        // TODO reltive to frequency from DT
+        // TODO or use servo devicetree definition, but it doesn't and I dont know why
+        ret = pwm_set_pulse_dt (&zAxisPwm, PWM_MSEC (15));
 
         if (ret) {
                 LOG_ERR ("Error %d: failed to set pulse width\n", ret);

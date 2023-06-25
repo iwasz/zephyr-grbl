@@ -14,8 +14,8 @@
 #include <cstdlib>
 #include <ctre.hpp>
 #include <etl/string.h>
-#include <gsl/gsl>
-#include <logging/log.h>
+#include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
 
 /*
  * https://github.com/gnea/grbl/issues/822 - good summary of the protocol.
@@ -88,7 +88,7 @@ TODO change namespace name to grbl
 */
 
 namespace grbl {
-void executeLine (gsl::czstring line);
+void executeLine (const char *line);
 void executeCommand (char command);
 
 using namespace ls;
@@ -272,7 +272,7 @@ namespace grbl {
 /**
  *
  */
-void executeLine (gsl::czstring line)
+void executeLine (const char *line)
 {
         if (!serial_is_initialized ()) {
                 LOG_WRN ("Serial subsystem is required for SD card to operate.");

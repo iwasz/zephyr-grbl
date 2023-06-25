@@ -37,8 +37,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <zephyr.h>
-#include <drivers/gpio.h>
+#include <zephyr/kernel.h>
+#include <zephyr/drivers/gpio.h>
 #include "zephyrGrblPeripherals.h"
 
 // Define the Grbl system include files. NOTE: Do not alter organization.

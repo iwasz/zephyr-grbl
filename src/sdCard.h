@@ -7,11 +7,10 @@
  ****************************************************************************/
 
 #pragma once
-#include <gsl/gsl>
 
 namespace sd {
 
 void init ();
-int lsdir (gsl::czstring path);
+int lsdir (const char *path);
 
 } // namespace sd

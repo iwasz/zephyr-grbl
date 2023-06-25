@@ -11,12 +11,13 @@
 #include "sdCard.h"
 #include "stepperDriverSettings.h"
 #include "zephyrGrblPeripherals.h"
-#include <drivers/gpio.h>
-#include <drivers/pwm.h>
-#include <drivers/spi.h>
-#include <sys/byteorder.h>
-#include <sys/reboot.h>
-#include <zephyr.h>
+#include <zephyr/drivers/gpio.h>
+#include <zephyr/drivers/pwm.h>
+#include <zephyr/drivers/spi.h>
+#include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/sys/byteorder.h>
+#include <zephyr/sys/reboot.h>
 
 LOG_MODULE_REGISTER (main);
 
@@ -26,7 +27,7 @@ void testStepperMotors ();
 /**
  *
  */
-void main ()
+int main ()
 {
         disp::init ();
         sd::init ();
@@ -54,13 +55,13 @@ void testStepperMotors ()
         bool dirState{};
 
         while (true) {
-                gpio_pin_set (dirX, MOTORX_DIR_PIN, dirState);
-                gpio_pin_set (dirY, MOTORX_DIR_PIN, dirState);
+                gpio_pin_set_dt (&dirX, dirState);
+                gpio_pin_set_dt (&dirY, dirState);
                 dirState = !dirState;
 
                 for (int i = 0; i < 10000; ++i) {
-                        gpio_pin_set (stepX, MOTORX_STEP_PIN, (int)stepState);
-                        gpio_pin_set (stepY, MOTORY_STEP_PIN, (int)stepState);
+                        gpio_pin_set_dt (&stepX, stepState);
+                        gpio_pin_set_dt (&stepY, stepState);
                         stepState = !stepState;
                         k_usleep (1000);
                 }

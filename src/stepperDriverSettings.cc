@@ -14,12 +14,10 @@ namespace drv {
 
 void init ()
 {
-        const struct spi_cs_control spiCs1 = {.gpio_dev = nssX, .delay = 0, .gpio_pin = MOTORX_NSS_PIN, .gpio_dt_flags = GPIO_ACTIVE_LOW};
-        struct spi_config spiCfg1 = {0};
-
+        spi_config spiCfg1{};
         spiCfg1.operation = SPI_WORD_SET (8) | SPI_MODE_CPOL | SPI_MODE_CPHA;
         spiCfg1.frequency = 500000U;
-        spiCfg1.cs = &spiCs1;
+        spiCfg1.cs = {.gpio = nssX, .delay = 0};
 
         // Based on Prusa i3 MK3 settings.
         TMC2130Stepper driver1 (spi, &spiCfg1);
@@ -93,16 +91,14 @@ void init ()
 
         driver1.TPWMTHRS (0);
 
-        gpio_pin_set (enableX, MOTORX_ENABLE_PIN, true);
+        gpio_pin_set_dt (&enableX, true);
 
         /****************************************************************************/
 
-        const struct spi_cs_control spiCs2 = {.gpio_dev = nssY, .delay = 0, .gpio_pin = MOTORY_NSS_PIN, .gpio_dt_flags = GPIO_ACTIVE_LOW};
-        struct spi_config spiCfg2 = {0};
-
+        spi_config spiCfg2{};
         spiCfg2.operation = SPI_WORD_SET (8) | SPI_MODE_CPOL | SPI_MODE_CPHA;
         spiCfg2.frequency = 500000U;
-        spiCfg2.cs = &spiCs2;
+        spiCfg2.cs = {.gpio = nssY, .delay = 0};
 
         TMC2130Stepper driver2 (spi, &spiCfg2);
 
@@ -164,7 +160,7 @@ void init ()
         /*--------------------------------------------------------------------------*/
 
         driver2.TPWMTHRS (0);
-        gpio_pin_set (enableY, MOTORY_ENABLE_PIN, true);
+        gpio_pin_set_dt (&enableY, true);
 }
 
 } // namespace drv

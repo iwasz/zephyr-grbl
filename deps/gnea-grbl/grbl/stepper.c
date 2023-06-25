@@ -176,7 +176,7 @@ typedef struct {
 
   #ifdef VARIABLE_SPINDLE
     float inv_rate;    // Used by PWM laser mode to speed up segment calculations.
-    uint8_t current_spindle_pwm; 
+    uint8_t current_spindle_pwm;
   #endif
 } st_prep_t;
 static st_prep_t prep;
@@ -191,8 +191,8 @@ void setServoPositionSteps (int absoluteSteps);
  */
 static void st_enable_motors (bool on)
 {
-        gpio_pin_set (enableX, MOTORX_ENABLE_PIN, on);
-        gpio_pin_set (enableY, MOTORY_ENABLE_PIN, on);
+        gpio_pin_set_dt (&enableX, on);
+        gpio_pin_set_dt (&enableY, on);
         // gpio_pin_set (enableZ, MOTORZ_ENABLE_PIN, on);
 }
 
@@ -262,7 +262,7 @@ void st_wake_up()
         hw_timer_set_update_callback (timerCallbackDevice, TIMER1_COMPA_vect);
 
         // Turn the timer on with whatever period. Only to fire the ISR.
-        int ret = hw_timer_pin_set_usec (timerCallbackDevice, PWM_CHANNEL, 1000, settings.pulse_microseconds, PWM_FLAGS);
+        int ret = hw_timer_set_cycles (timerCallbackDevice, PWM_CHANNEL, 1000, settings.pulse_microseconds, PWM_FLAGS);
 
         if (ret) {
                 LOG_ERR ("hw_timer_pin_set_usec failed with %d \n", ret);
@@ -346,8 +346,8 @@ void TIMER1_COMPA_vect ()
   // Set the direction pins a couple of nanoseconds before we step the steppers
   // DIRECTION_PORT = (DIRECTION_PORT & ~DIRECTION_MASK) | (st.dir_outbits & DIRECTION_MASK);
 
-   gpio_pin_set (dirX, MOTORX_DIR_PIN, st.dir_outbits & (1 << X_DIRECTION_BIT));
-   gpio_pin_set (dirY, MOTORY_DIR_PIN, st.dir_outbits & (1 << Y_DIRECTION_BIT));
+   gpio_pin_set_dt (&dirX, st.dir_outbits & (1 << X_DIRECTION_BIT));
+   gpio_pin_set_dt (&dirY, st.dir_outbits & (1 << Y_DIRECTION_BIT));
 #ifndef USE_SERVO_FOR_Z
    gpio_pin_set (dirZ, MOTORZ_DIR_PIN, st.dir_outbits & (1 << Z_DIRECTION_BIT));
 #endif
@@ -367,20 +367,20 @@ void TIMER1_COMPA_vect ()
 
         if (st.step_outbits & (1 << X_STEP_BIT)) {
                 static bool stepStateX = 0; // Works with DDR where a step is performed on both rising and falling edge.
-                gpio_pin_set (stepX, MOTORX_STEP_PIN, stepStateX);
+                gpio_pin_set_dt (&stepX, stepStateX);
                 stepStateX = !stepStateX;
         }
 
         if (st.step_outbits & (1 << Y_STEP_BIT)) {
                 static bool stepStateY = 0;
-                gpio_pin_set (stepY, MOTORY_STEP_PIN, stepStateY);
+                gpio_pin_set_dt (&stepY, stepStateY);
                 stepStateY = !stepStateY;
         }
 
 #ifndef USE_SERVO_FOR_Z
         if (st.step_outbits & (1 << Z_STEP_BIT)) {
                 static bool stepStateZ = 0;
-                gpio_pin_set (stepZ, MOTORZ_STEP_PIN, stepStateZ);
+                gpio_pin_set_dt (stepZ, stepStateZ);
                 stepStateZ = !stepStateZ;
         }
 #endif
@@ -415,7 +415,7 @@ void TIMER1_COMPA_vect ()
       // Initialize step segment timing per step and load number of steps to execute.
       // OCR1A = st.exec_segment->cycles_per_tick;
 
-      int ret = hw_timer_pin_set_usec (timerCallbackDevice, PWM_CHANNEL, st.exec_segment->periodUs,
+      int ret = hw_timer_set (timerCallbackDevice, PWM_CHANNEL, st.exec_segment->periodUs,
                                        settings.pulse_microseconds, PWM_FLAGS);
 
       if (ret) {
@@ -523,7 +523,7 @@ void TIMER1_COMPA_vect ()
 #endif
 
   // During a homing cycle, lock out and prevent desired axes from moving.
-  if (sys.state == STATE_HOMING) { 
+  if (sys.state == STATE_HOMING) {
     st.step_outbits &= sys.homing_axis_lock;
     #ifdef ENABLE_DUAL_AXIS
       st.step_outbits_dual &= sys.homing_axis_lock_dual;
@@ -596,7 +596,7 @@ void st_generate_step_dir_invert_masks()
   #ifdef ENABLE_DUAL_AXIS
     step_port_invert_mask_dual = 0;
     dir_port_invert_mask_dual = 0;
-    // NOTE: Dual axis invert uses the N_AXIS bit to set step and direction invert pins.    
+    // NOTE: Dual axis invert uses the N_AXIS bit to set step and direction invert pins.
     if (bit_istrue(settings.step_invert_mask,bit(N_AXIS))) { step_port_invert_mask_dual = (1<<DUAL_STEP_BIT); }
     if (bit_istrue(settings.dir_invert_mask,bit(N_AXIS))) { dir_port_invert_mask_dual = (1<<DUAL_DIRECTION_BIT); }
   #endif
@@ -626,14 +626,14 @@ void st_reset()
   // STEP_PORT = (STEP_PORT & ~STEP_MASK) | step_port_invert_mask;
   // DIRECTION_PORT = (DIRECTION_PORT & ~DIRECTION_MASK) | dir_port_invert_mask;
 
-  gpio_pin_set (stepX, MOTORX_STEP_PIN, bit_istrue(settings.step_invert_mask,bit(0)));
-  gpio_pin_set (stepY, MOTORY_STEP_PIN, bit_istrue(settings.step_invert_mask,bit(1)));
-  // gpio_pin_set (stepZ, MOTORZ_STEP_PIN, bit_istrue(settings.step_invert_mask,bit(2)));
+  gpio_pin_set_dt (&stepX, bit_istrue(settings.step_invert_mask,bit(0)));
+  gpio_pin_set_dt (&stepY, bit_istrue(settings.step_invert_mask,bit(1)));
+  // gpio_pin_set_dt (&stepZ, bit_istrue(settings.step_invert_mask,bit(2)));
 
-  gpio_pin_set (dirX, MOTORX_DIR_PIN, bit_istrue(settings.dir_invert_mask,bit(0)));
-  gpio_pin_set (dirY, MOTORY_DIR_PIN, bit_istrue(settings.dir_invert_mask,bit(1)));
-  // gpio_pin_set (dirZ, MOTORZ_DIR_PIN, bit_istrue(settings.dir_invert_mask,bit(2)));
-  
+  gpio_pin_set_dt (&dirX, bit_istrue(settings.dir_invert_mask,bit(0)));
+  gpio_pin_set_dt (&dirY, bit_istrue(settings.dir_invert_mask,bit(1)));
+  // gpio_pin_set_dt (&dirZ, bit_istrue(settings.dir_invert_mask,bit(2)));
+
   #ifdef ENABLE_DUAL_AXIS
     st.dir_outbits_dual = dir_port_invert_mask_dual;
     STEP_PORT_DUAL = (STEP_PORT_DUAL & ~STEP_MASK_DUAL) | step_port_invert_mask_dual;
@@ -650,7 +650,7 @@ void stepper_init()
   STEP_DDR |= STEP_MASK;
   STEPPERS_DISABLE_DDR |= 1<<STEPPERS_DISABLE_BIT;
   DIRECTION_DDR |= DIRECTION_MASK;
-  
+
   #ifdef ENABLE_DUAL_AXIS
     STEP_DDR_DUAL |= STEP_MASK_DUAL;
     DIRECTION_DDR_DUAL |= DIRECTION_MASK_DUAL;
@@ -784,11 +784,11 @@ void st_prep_buffer()
         st_prep_block->direction_bits = pl_block->direction_bits;
         #ifdef ENABLE_DUAL_AXIS
           #if (DUAL_AXIS_SELECT == X_AXIS)
-            if (st_prep_block->direction_bits & (1<<X_DIRECTION_BIT)) { 
+            if (st_prep_block->direction_bits & (1<<X_DIRECTION_BIT)) {
           #elif (DUAL_AXIS_SELECT == Y_AXIS)
-            if (st_prep_block->direction_bits & (1<<Y_DIRECTION_BIT)) { 
+            if (st_prep_block->direction_bits & (1<<Y_DIRECTION_BIT)) {
           #endif
-            st_prep_block->direction_bits_dual = (1<<DUAL_DIRECTION_BIT); 
+            st_prep_block->direction_bits_dual = (1<<DUAL_DIRECTION_BIT);
           }  else { st_prep_block->direction_bits_dual = 0; }
         #endif
         uint8_t idx;
@@ -817,16 +817,16 @@ void st_prep_buffer()
         } else {
           prep.current_speed = sqrt(pl_block->entry_speed_sqr);
         }
-        
+
         #ifdef VARIABLE_SPINDLE
           // Setup laser mode variables. PWM rate adjusted motions will always complete a motion with the
-          // spindle off. 
+          // spindle off.
           st_prep_block->is_pwm_rate_adjusted = false;
           if (settings.flags & BITFLAG_LASER_MODE) {
-            if (pl_block->condition & PL_COND_FLAG_SPINDLE_CCW) { 
+            if (pl_block->condition & PL_COND_FLAG_SPINDLE_CCW) {
               // Pre-compute inverse programmed rate to speed up PWM updating per step segment.
               prep.inv_rate = 1.0/pl_block->programmed_rate;
-              st_prep_block->is_pwm_rate_adjusted = true; 
+              st_prep_block->is_pwm_rate_adjusted = true;
             }
           }
         #endif
@@ -922,12 +922,12 @@ void st_prep_buffer()
 					prep.maximum_speed = prep.exit_speed;
 				}
 			}
-      
+
       #ifdef VARIABLE_SPINDLE
         bit_true(sys.step_control, STEP_CONTROL_UPDATE_SPINDLE_PWM); // Force update whenever updating block.
       #endif
     }
-    
+
     // Initialize new segment
     segment_t *prep_segment = &segment_buffer[segment_buffer_head];
 
@@ -1036,16 +1036,16 @@ void st_prep_buffer()
       /* -----------------------------------------------------------------------------------
         Compute spindle speed PWM output for step segment
       */
-      
+
       if (st_prep_block->is_pwm_rate_adjusted || (sys.step_control & STEP_CONTROL_UPDATE_SPINDLE_PWM)) {
         if (pl_block->condition & (PL_COND_FLAG_SPINDLE_CW | PL_COND_FLAG_SPINDLE_CCW)) {
           float rpm = pl_block->spindle_speed;
-          // NOTE: Feed and rapid overrides are independent of PWM value and do not alter laser power/rate.        
+          // NOTE: Feed and rapid overrides are independent of PWM value and do not alter laser power/rate.
           if (st_prep_block->is_pwm_rate_adjusted) { rpm *= (prep.current_speed * prep.inv_rate); }
           // If current_speed is zero, then may need to be rpm_min*(100/MAX_SPINDLE_SPEED_OVERRIDE)
           // but this would be instantaneous only and during a motion. May not matter at all.
           prep.current_spindle_pwm = spindle_compute_pwm_value(rpm);
-        } else { 
+        } else {
           sys.spindle_speed = 0.0;
           prep.current_spindle_pwm = SPINDLE_PWM_OFF_VALUE;
         }
@@ -1054,7 +1054,7 @@ void st_prep_buffer()
       prep_segment->spindle_pwm = prep.current_spindle_pwm; // Reload segment PWM value
 
     #endif
-    
+
     /* -----------------------------------------------------------------------------------
        Compute segment step rate, steps to execute, and apply necessary rate corrections.
        NOTE: Steps are computed by direct scalar conversion of the millimeter distance
@@ -1216,7 +1216,7 @@ void setServoPositionSteps (int absoluteSteps)
                 pulseUs = SERVO_PULSE_MIN;
         }
 
-        int ret = pwm_pin_set_usec (zAxisPwm, 3, 20 * 1000, pulseUs, PWM_POLARITY_NORMAL);
+        int ret = pwm_set_pulse_dt (&zAxisPwm, pulseUs);
 
         if (ret) {
                 LOG_ERR ("Error %d: failed to set pulse width\n", ret);

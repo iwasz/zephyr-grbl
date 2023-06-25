@@ -12,13 +12,13 @@
 #include "grblState.h"
 #include "sdCard.h"
 #include <array>
-#include <device.h>
-#include <devicetree.h>
-#include <display/cfb.h>
-#include <drivers/gpio.h>
-#include <logging/log.h>
 #include <optional>
-#include <zephyr.h>
+#include <zephyr/device.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/display/cfb.h>
+#include <zephyr/drivers/gpio.h>
+#include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
 
 LOG_MODULE_REGISTER (display);
 
@@ -30,47 +30,29 @@ K_THREAD_DEFINE (disp, 2048, displayThread, NULL, NULL, NULL, 14, 0, 0);
 namespace disp {
 
 namespace {
-#define ENCODER_A_NODE DT_PATH (ui_buttons, encoder_a)
-#define ENCODER_A_PIN DT_GPIO_PIN (ENCODER_A_NODE, gpios)
-#define ENCODER_A_FLAGS DT_GPIO_FLAGS (ENCODER_A_NODE, gpios)
-        const struct device *encoderA;
-
-#define ENCODER_B_NODE DT_PATH (ui_buttons, encoder_b)
-#define ENCODER_B_PIN DT_GPIO_PIN (ENCODER_B_NODE, gpios)
-#define ENCODER_B_FLAGS DT_GPIO_FLAGS (ENCODER_B_NODE, gpios)
-        const struct device *encoderB;
-
-#define ENCODER_ENTER_NODE DT_PATH (ui_buttons, enter)
-#define ENCODER_ENTER_PIN DT_GPIO_PIN (ENCODER_ENTER_NODE, gpios)
-#define ENCODER_ENTER_FLAGS DT_GPIO_FLAGS (ENCODER_ENTER_NODE, gpios)
-        const struct device *encoderEnter;
-
-        const struct device *display;
+        const gpio_dt_spec encoderA = GPIO_DT_SPEC_GET (DT_PATH (ui_buttons, encoder_a), gpios);
+        const gpio_dt_spec encoderB = GPIO_DT_SPEC_GET (DT_PATH (ui_buttons, encoder_b), gpios);
+        const gpio_dt_spec encoderEnter = GPIO_DT_SPEC_GET (DT_PATH (ui_buttons, enter), gpios);
+        const struct device *display{};
 } // namespace
 
 void init ()
 {
-        encoderA = device_get_binding (DT_GPIO_LABEL (ENCODER_A_NODE, gpios));
-
-        if (!device_is_ready (encoderA)) {
+        if (!gpio_is_ready_dt (&encoderA)) {
                 LOG_ERR ("encoderA !ready");
         }
 
-        encoderB = device_get_binding (DT_GPIO_LABEL (ENCODER_B_NODE, gpios));
-
-        if (!device_is_ready (encoderB)) {
+        if (!gpio_is_ready_dt (&encoderB)) {
                 LOG_ERR ("encoderB !ready");
         }
 
-        encoderEnter = device_get_binding (DT_GPIO_LABEL (ENCODER_ENTER_NODE, gpios));
-
-        if (!device_is_ready (encoderEnter)) {
+        if (!gpio_is_ready_dt (&encoderEnter)) {
                 LOG_ERR ("encoderEnter !ready");
         }
 
-        int ret = gpio_pin_configure (encoderA, ENCODER_A_PIN, GPIO_INPUT | ENCODER_A_FLAGS);
-        ret |= gpio_pin_configure (encoderB, ENCODER_B_PIN, GPIO_INPUT | ENCODER_B_FLAGS);
-        ret |= gpio_pin_configure (encoderEnter, ENCODER_ENTER_PIN, GPIO_INPUT | ENCODER_ENTER_FLAGS);
+        int ret = gpio_pin_configure_dt (&encoderA, GPIO_INPUT);
+        ret |= gpio_pin_configure_dt (&encoderB, GPIO_INPUT);
+        ret |= gpio_pin_configure_dt (&encoderEnter, GPIO_INPUT);
 
         if (ret != 0) {
                 LOG_ERR ("Encoder init failed");
@@ -80,10 +62,15 @@ void init ()
 
         uint16_t rows;
         uint8_t ppt;
-        uint8_t font_width;
-        uint8_t font_height;
+        // uint8_t font_width;
+        // uint8_t font_height;
 
         display = device_get_binding ("SSD1306");
+
+        if (!device_is_ready (display)) {
+                LOG_ERR ("Device not ready, aborting test");
+                return;
+        }
 
         if (display == NULL) {
                 LOG_ERR ("Device not found\n");
@@ -256,7 +243,7 @@ void displayThread (void *, void *, void *)
                         {0x01, 0x01, 0x02, 0x03},
                 }};
 
-                uint8_t event = gpio_pin_get (encoderB, ENCODER_B_PIN) << 1 | gpio_pin_get (encoderA, ENCODER_A_PIN);
+                uint8_t event = gpio_pin_get_dt (&encoderB) << 1 | gpio_pin_get_dt (&encoderA);
                 auto x = ENC[state][event];
                 state = x & 0x03;
 
@@ -266,7 +253,7 @@ void displayThread (void *, void *, void *)
 
                 first = false;
 
-                if (bool e = gpio_pin_get (encoderEnter, ENCODER_ENTER_PIN); e != prevE) {
+                if (bool e = gpio_pin_get_dt (&encoderEnter); e != prevE) {
                         prevE = e;
 
                         if (e) {

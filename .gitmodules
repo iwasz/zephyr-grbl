@@ -4,9 +4,6 @@
 [submodule "deps/grbl"]
 	path = deps/grbl
 	url = git@github.com:iwasz/grbl.git
-[submodule "deps/gsl-lite"]
-	path = deps/gsl-lite
-	url = git@github.com:gsl-lite/gsl-lite.git
 [submodule "deps/etl"]
 	path = deps/etl
 	url = git@github.com:ETLCPP/etl.git

@@ -20,6 +20,12 @@
 */
 
 #include "grbl.h"
+#include <zephyr/drivers/gpio.h>
+#include <zephyr/device.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/sys/printk.h>
 
 LOG_MODULE_REGISTER (limits);
 
@@ -39,31 +45,6 @@ LOG_MODULE_REGISTER (limits);
   #define DUAL_AXIS_CHECK_TRIGGER_2   bit(2)
 #endif
 
-#define SWITCH_LEFT_NODE DT_PATH (edge_switch_pins, left)
-#define SWITCH_LEFT_LABEL DT_GPIO_LABEL (SWITCH_LEFT_NODE, gpios)
-#define SWITCH_LEFT_PIN DT_GPIO_PIN (SWITCH_LEFT_NODE, gpios)
-#define SWITCH_LEFT_FLAGS DT_GPIO_FLAGS (SWITCH_LEFT_NODE, gpios)
-
-#define SWITCH_RIGHT_NODE DT_PATH (edge_switch_pins, right)
-#define SWITCH_RIGHT_LABEL DT_GPIO_LABEL (SWITCH_RIGHT_NODE, gpios)
-#define SWITCH_RIGHT_PIN DT_GPIO_PIN (SWITCH_RIGHT_NODE, gpios)
-#define SWITCH_RIGHT_FLAGS DT_GPIO_FLAGS (SWITCH_RIGHT_NODE, gpios)
-
-#define SWITCH_TOP_NODE DT_PATH (edge_switch_pins, top)
-#define SWITCH_TOP_LABEL DT_GPIO_LABEL (SWITCH_TOP_NODE, gpios)
-#define SWITCH_TOP_PIN DT_GPIO_PIN (SWITCH_TOP_NODE, gpios)
-#define SWITCH_TOP_FLAGS DT_GPIO_FLAGS (SWITCH_TOP_NODE, gpios)
-
-#define SWITCH_BOTTOM_NODE DT_PATH (edge_switch_pins, bottom)
-#define SWITCH_BOTTOM_LABEL DT_GPIO_LABEL (SWITCH_BOTTOM_NODE, gpios)
-#define SWITCH_BOTTOM_PIN DT_GPIO_PIN (SWITCH_BOTTOM_NODE, gpios)
-#define SWITCH_BOTTOM_FLAGS DT_GPIO_FLAGS (SWITCH_BOTTOM_NODE, gpios)
-
-const struct device *leftSwitch;
-const struct device *rightSwitch;
-const struct device *topSwitch;
-const struct device *bottomSwitch;
-
 struct gpio_callback buttonCbDataLeft;
 struct gpio_callback buttonCbDataRight;
 struct gpio_callback buttonCbDataTop;
@@ -81,7 +62,7 @@ static void limitSwitchDebounceCallback (struct k_timer *timer_id);
 
 void limits_init()
 {
-/* 
+/*
   Left for reference.
   LIMIT_DDR &= ~(LIMIT_MASK); // Set as input pins
 
@@ -99,71 +80,54 @@ void limits_init()
 
         int ret = 0;
 
-        if ((leftSwitch = device_get_binding (SWITCH_LEFT_LABEL)) == NULL) {
-                LOG_ERR ("leftSwitch == NULL");
-                return;
-        }
-
-        if ((ret = gpio_pin_configure (leftSwitch, SWITCH_LEFT_PIN, GPIO_INPUT | SWITCH_LEFT_FLAGS)) < 0) {
+        if ((ret = gpio_pin_configure_dt (&leftSwitch,  GPIO_INPUT)) < 0) {
                 LOG_ERR ("leftSwitch configure fail %d", ret);
                 return;
         }
 
-        if ((ret = gpio_pin_interrupt_configure (leftSwitch, SWITCH_LEFT_PIN, GPIO_INT_EDGE_TO_ACTIVE)) != 0) {
+        if ((ret = gpio_pin_interrupt_configure_dt (&leftSwitch, GPIO_INT_EDGE_TO_ACTIVE)) != 0) {
                 LOG_ERR ("Error %d: leftSwitch interrupt", ret);
                 return;
         }
 
         /*--------------------------------------------------------------------------*/
 
-        if ((rightSwitch = device_get_binding (SWITCH_RIGHT_LABEL)) == NULL) {
-                LOG_ERR ("rightSwitch == NULL");
-                return;
-        }
-
-        if ((ret = gpio_pin_configure (rightSwitch, SWITCH_RIGHT_PIN, GPIO_INPUT | SWITCH_RIGHT_FLAGS)) < 0) {
+        if ((ret = gpio_pin_configure_dt (&rightSwitch,  GPIO_INPUT)) < 0) {
                 LOG_ERR ("rightSwitch configure fail %d", ret);
                 return;
         }
 
-        if ((ret = gpio_pin_interrupt_configure (rightSwitch, SWITCH_RIGHT_PIN, GPIO_INT_EDGE_TO_ACTIVE)) != 0) {
+        if ((ret = gpio_pin_interrupt_configure_dt (&rightSwitch, GPIO_INT_EDGE_TO_ACTIVE)) != 0) {
                 LOG_ERR ("Error %d: rightSwitch interrupt", ret);
                 return;
         }
 
+
         /*--------------------------------------------------------------------------*/
 
-        if ((topSwitch = device_get_binding (SWITCH_TOP_LABEL)) == NULL) {
-                LOG_ERR ("topSwitch == NULL");
-                return;
-        }
-
-        if ((ret = gpio_pin_configure (topSwitch, SWITCH_TOP_PIN, GPIO_INPUT | SWITCH_TOP_FLAGS)) < 0) {
+      if ((ret = gpio_pin_configure_dt (&topSwitch,  GPIO_INPUT)) < 0) {
                 LOG_ERR ("topSwitch configure fail %d", ret);
                 return;
         }
 
-        if ((ret = gpio_pin_interrupt_configure (topSwitch, SWITCH_TOP_PIN, GPIO_INT_EDGE_TO_ACTIVE)) != 0) {
+        if ((ret = gpio_pin_interrupt_configure_dt (&topSwitch, GPIO_INT_EDGE_TO_ACTIVE)) != 0) {
                 LOG_ERR ("Error %d: topSwitch interrupt", ret);
-                return; 
-        }
-
-        /*--------------------------------------------------------------------------*/
-
-        if ((bottomSwitch = device_get_binding (SWITCH_BOTTOM_LABEL)) == NULL) {
-                LOG_ERR ("bottomSwitch == NULL");
                 return;
         }
 
-        if ((ret = gpio_pin_configure (bottomSwitch, SWITCH_BOTTOM_PIN, GPIO_INPUT | SWITCH_BOTTOM_FLAGS)) < 0) {
+
+        /*--------------------------------------------------------------------------*/
+
+      if ((ret = gpio_pin_configure_dt (&bottomSwitch,  GPIO_INPUT)) < 0) {
                 LOG_ERR ("bottomSwitch configure fail %d", ret);
                 return;
         }
 
-        if ((ret = gpio_pin_interrupt_configure (bottomSwitch, SWITCH_BOTTOM_PIN, GPIO_INT_EDGE_TO_ACTIVE)) != 0) {
+        if ((ret = gpio_pin_interrupt_configure_dt (&bottomSwitch, GPIO_INT_EDGE_TO_ACTIVE)) != 0) {
                 LOG_ERR ("Error %d: bottomSwitch interrupt", ret);
                 return;
         }
+
 
         /*--------------------------------------------------------------------------*/
 
@@ -182,17 +146,17 @@ void limits_init()
 #endif
 
   if (bit_istrue(settings.flags,BITFLAG_HARD_LIMIT_ENABLE)) {
-        gpio_init_callback (&buttonCbDataLeft, limitSwitchPressed, BIT (SWITCH_LEFT_PIN));
-        gpio_add_callback (leftSwitch, &buttonCbDataLeft);
+        gpio_init_callback (&buttonCbDataLeft, limitSwitchPressed, leftSwitch.pin);
+        gpio_add_callback_dt (&leftSwitch, &buttonCbDataLeft);
 
-        gpio_init_callback (&buttonCbDataRight, limitSwitchPressed, BIT (SWITCH_RIGHT_PIN));
-        gpio_add_callback (rightSwitch, &buttonCbDataRight);
+        gpio_init_callback (&buttonCbDataRight, limitSwitchPressed, rightSwitch.pin);
+        gpio_add_callback_dt (&rightSwitch, &buttonCbDataRight);
 
-        gpio_init_callback (&buttonCbDataTop, limitSwitchPressed, BIT (SWITCH_TOP_PIN));
-        gpio_add_callback (topSwitch, &buttonCbDataTop);
+        gpio_init_callback (&buttonCbDataTop, limitSwitchPressed, topSwitch.pin);
+        gpio_add_callback_dt (&topSwitch, &buttonCbDataTop);
 
-        gpio_init_callback (&buttonCbDataBottom, limitSwitchPressed, BIT (SWITCH_BOTTOM_PIN));
-        gpio_add_callback (bottomSwitch, &buttonCbDataBottom);
+        gpio_init_callback (&buttonCbDataBottom, limitSwitchPressed, bottomSwitch.pin);
+        gpio_add_callback_dt (&bottomSwitch, &buttonCbDataBottom);
 
         // gpio_init_callback (&motor1StallCbData, switchPressed, BIT (MOTORX_STALL_PIN));
         // gpio_add_callback (motor1Stall, &motor1StallCbData);
@@ -222,10 +186,10 @@ void limits_disable()
   LIMIT_PCMSK &= ~LIMIT_MASK;  // Disable specific pins of the Pin Change Interrupt
   PCICR &= ~(1 << LIMIT_INT);  // Disable Pin Change Interrupt
   */
-  gpio_remove_callback(leftSwitch, &buttonCbDataLeft);
-  gpio_remove_callback (rightSwitch, &buttonCbDataRight);
-  gpio_remove_callback (topSwitch, &buttonCbDataTop);
-  gpio_remove_callback (bottomSwitch, &buttonCbDataBottom);
+  gpio_remove_callback_dt (&leftSwitch, &buttonCbDataLeft);
+  gpio_remove_callback_dt (&rightSwitch, &buttonCbDataRight);
+  gpio_remove_callback_dt (&topSwitch, &buttonCbDataTop);
+  gpio_remove_callback_dt (&bottomSwitch, &buttonCbDataBottom);
 }
 
 
@@ -237,8 +201,8 @@ uint8_t limits_get_state()
   uint8_t limit_state = 0;
 
   // TODO It seems that GRBL needs only one switch per axis, not 2 as I thought.
-  bool axisX = gpio_pin_get (leftSwitch, SWITCH_LEFT_PIN) || gpio_pin_get (rightSwitch, SWITCH_RIGHT_PIN);
-  bool axisY = gpio_pin_get (topSwitch, SWITCH_TOP_PIN) || gpio_pin_get (bottomSwitch, SWITCH_BOTTOM_PIN);
+  bool axisX = gpio_pin_get_dt (&leftSwitch) || gpio_pin_get_dt (&rightSwitch);
+  bool axisY = gpio_pin_get_dt (&topSwitch) || gpio_pin_get_dt (&bottomSwitch);
   bool axisZ = 0; // TODO make room for this in the overlay and elsewhere.
 
   uint8_t pin = ((axisX<<X_LIMIT_BIT)|(axisY<<Y_LIMIT_BIT)|(axisZ<<Z_LIMIT_BIT));
@@ -247,14 +211,14 @@ uint8_t limits_get_state()
     pin ^= INVERT_LIMIT_PIN_MASK;
   #endif
 
-  // In zephyr there is discrepancy between pin "active / inactive" state and 
+  // In zephyr there is discrepancy between pin "active / inactive" state and
   // physical "high / low" states. Here we operate on the higher level "active / inactive"
   // Which means, that we are always checking for gpio_pin_get returning TRUE.
-  // The user can then configure in the overlay file if he wants those pins to 
+  // The user can then configure in the overlay file if he wants those pins to
   // operate in positive or negative logic. Therefore below bit_isfalse has been
-  // changed to bit_istrue (originally they worked on the "physical" level which was 
+  // changed to bit_istrue (originally they worked on the "physical" level which was
   // 1 by default and 0 on limit switch triggered).
-  if (bit_istrue(settings.flags,BITFLAG_INVERT_LIMIT_PINS)) { pin ^= LIMIT_MASK; } 
+  if (bit_istrue(settings.flags,BITFLAG_INVERT_LIMIT_PINS)) { pin ^= LIMIT_MASK; }
   if (pin) {
     uint8_t idx;
     for (idx=0; idx<N_AXIS; idx++) {
@@ -264,7 +228,7 @@ uint8_t limits_get_state()
       if (pin & (1<<DUAL_LIMIT_BIT)) { limit_state |= (1 << N_AXIS); }
     #endif
   }
-  
+
   return(limit_state);
 }
 
@@ -274,7 +238,7 @@ uint8_t limits_get_state()
 // If a switch is triggered at all, something bad has happened and treat it as such, regardless
 // if a limit switch is being disengaged. It's impossible to reliably tell the state of a
 // bouncing pin because the Arduino microcontroller does not retain any state information when
-// detecting a pin change. If we poll the pins in the ISR, you can miss the correct reading if the 
+// detecting a pin change. If we poll the pins in the ISR, you can miss the correct reading if the
 // switch is bouncing.
 // NOTE: Do not attach an e-stop to the limit pins, because this interrupt is disabled during
 // homing cycles and will not respond correctly. Upon user request or need, there may be a
@@ -305,29 +269,29 @@ uint8_t limits_get_state()
     }
   }
 #else // OPTIONAL: Software debounce limit pin routine.
-  // Upon limit pin change, enable watchdog timer to create a short delay. 
+  // Upon limit pin change, enable watchdog timer to create a short delay.
   ISR(LIMIT_INT_vect) { if (!(WDTCSR & (1<<WDIE))) { WDTCSR |= (1<<WDIE); } }
   ISR(WDT_vect) // Watchdog timer ISR
   {
-    WDTCSR &= ~(1<<WDIE); // Disable watchdog timer. 
-    if (sys.state != STATE_ALARM) {  // Ignore if already in alarm state. 
+    WDTCSR &= ~(1<<WDIE); // Disable watchdog timer.
+    if (sys.state != STATE_ALARM) {  // Ignore if already in alarm state.
       if (!(sys_rt_exec_alarm)) {
-        // Check limit pin state. 
+        // Check limit pin state.
         if (limits_get_state()) {
           mc_reset(); // Initiate system kill.
           system_set_exec_alarm(EXEC_ALARM_HARD_LIMIT); // Indicate hard limit critical event
         }
-      }  
+      }
     }
   }
 #endif
 */
 /**
- * Limit switch was pressed callback with differentiation which one 
+ * Limit switch was pressed callback with differentiation which one
  * was it. It seems that GRBL doesn't need the information about the
  * source and it checks the state of the pins elsewhere, later?
  */
-static void limitSwitchPressed (const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+static void limitSwitchPressed (const struct device *dev, struct gpio_callback */* cb */, uint32_t pins)
 {
 #ifndef ENABLE_SOFTWARE_DEBOUNCE
     if (sys.state != STATE_ALARM) {
@@ -343,19 +307,19 @@ static void limitSwitchPressed (const struct device *dev, struct gpio_callback *
           system_set_exec_alarm(EXEC_ALARM_HARD_LIMIT); // Indicate hard limit critical event
         #endif
       }
-    }    
+    }
 #else // Do software debounce.
         // This ISR reacts to an edge from inactive to active (whatever the physical state). So we are "active".
-        if (dev == leftSwitch && pins == BIT (SWITCH_LEFT_PIN)) {
+        if (dev == leftSwitch.port && pins == leftSwitch.pin) {
                 limitPinState = limitPinStateLeft;
         }
-        else if (dev == rightSwitch && pins == BIT (SWITCH_RIGHT_PIN)) {
+        else if (dev == rightSwitch.port && pins == rightSwitch.pin) {
                 limitPinState = limitPinStateRight;
         }
-        else if (dev == topSwitch && pins == BIT (SWITCH_TOP_PIN)) {
+        else if (dev == topSwitch.port && pins == topSwitch.pin) {
                 limitPinState = limitPinStateTop;
         }
-        else if (dev == bottomSwitch && pins == BIT (SWITCH_BOTTOM_PIN)) {
+        else if (dev == bottomSwitch.port && pins == bottomSwitch.pin) {
                 limitPinState = limitPinStateBottom;
         }
 
@@ -373,39 +337,39 @@ static void limitSwitchDebounceCallback (struct k_timer *timer_id)
   bool consistent = false;
 
         if (limitPinState == limitPinStateLeft) {
-                if (gpio_pin_get (leftSwitch, SWITCH_LEFT_PIN) == 1) {
+                if (gpio_pin_get_dt (&leftSwitch) == 1) {
                         consistent = true;
                         // LOG_INF ("L");
                 }
         }
         else if (limitPinState == limitPinStateRight) {
-                if (gpio_pin_get (rightSwitch, SWITCH_RIGHT_PIN) == 1) {
+                if (gpio_pin_get_dt (&rightSwitch) == 1) {
                         consistent = true;
                         // LOG_INF ("R");
                 }
         }
         else if (limitPinState == limitPinStateTop) {
-                if (gpio_pin_get (topSwitch, SWITCH_TOP_PIN) == 1) {
+                if (gpio_pin_get_dt (&topSwitch) == 1) {
                         consistent = true;
                         // LOG_INF ("T");
                 }
         }
         else if (limitPinState == limitPinStateBottom) {
-                if (gpio_pin_get (bottomSwitch, SWITCH_BOTTOM_PIN) == 1) {
+                if (gpio_pin_get_dt (&bottomSwitch) == 1) {
                         consistent = true;
                         // LOG_INF ("B");
                 }
         }
 
-    if (sys.state != STATE_ALARM) {  // Ignore if already in alarm state. 
+    if (sys.state != STATE_ALARM) {  // Ignore if already in alarm state.
       if (!(sys_rt_exec_alarm) && consistent) {
-        // Check limit pin state. 
+        // Check limit pin state.
         if (limits_get_state()) {
           mc_reset(); // Initiate system kill.
           system_set_exec_alarm(EXEC_ALARM_HARD_LIMIT); // Indicate hard limit critical event
         }
-      }  
-    }      
+      }
+    }
 }
 
 
@@ -417,7 +381,7 @@ static void limitSwitchDebounceCallback (struct k_timer *timer_id)
 // NOTE: Only the abort realtime command can interrupt this process.
 // TODO: Move limit pin-specific calls to a general function for portability.
 void limits_go_home(uint8_t cycle_mask)
-{  
+{
   if (sys.abort) { return; } // Block if system reset has been issued.
 
   // Initialize plan data struct for homing motion. Spindle and coolant are disabled.
@@ -552,12 +516,12 @@ void limits_go_home(uint8_t cycle_mask)
         sys.homing_axis_lock = axislock;
         #ifdef ENABLE_DUAL_AXIS
           if (sys.homing_axis_lock_dual) { // NOTE: Only true when homing dual axis.
-            if (limit_state & (1 << N_AXIS)) { 
+            if (limit_state & (1 << N_AXIS)) {
               sys.homing_axis_lock_dual = 0;
               dual_axis_async_check |= DUAL_AXIS_CHECK_TRIGGER_2;
             }
           }
-          
+
           // When first dual axis limit triggers, record position and begin checking distance until other limit triggers. Bail upon failure.
           if (dual_axis_async_check) {
             if (dual_axis_async_check & DUAL_AXIS_CHECK_ENABLE) {
@@ -580,10 +544,10 @@ void limits_go_home(uint8_t cycle_mask)
       }
 
       st_prep_buffer(); // Check and prep segment buffer. NOTE: Should take no longer than 200us.
-      // This is my guess. If on AVR st_prep_buffer takes not more than 200µs, 
-      // then on Cortex M4 it will be faster. So I can afford additional 100µs 
+      // This is my guess. If on AVR st_prep_buffer takes not more than 200µs,
+      // then on Cortex M4 it will be faster. So I can afford additional 100µs
       // for other threads here.
-      k_usleep(100); 
+      k_usleep(100);
 
       // Exit routines: No time to run protocol_execute_realtime() in this loop.
       if (sys_rt_exec_state & (EXEC_SAFETY_DOOR | EXEC_RESET | EXEC_CYCLE_STOP)) {

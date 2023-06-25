@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../zephyrproject-3.4.99"
+		}
+	],
+	"settings": {
+		"cortex-debug.armToolchainPath": "/home/iwasz/.local/zephyr-sdk-0.16.1/arm-zephyr-eabi/bin",
+		"cortex-debug.armToolchainPrefix": "arm-zephyr-eabi",
+		"cortex-debug.gdbPath": "/usr/bin/arm-none-eabi-gdb",
+		"clangd.arguments": [
+			"--query-driver=/home/iwasz/.local/zephyr-sdk-0.16.1/arm-zephyr-eabi/bin/arm-zephyr-eabi-gcc,/home/iwasz/.local/zephyr-sdk-0.16.1/arm-zephyr-eabi/bin/arm-zephyr-eabi-g++",
+			"--background-index",
+			"--header-insertion=never"
+		],
+	}
+}

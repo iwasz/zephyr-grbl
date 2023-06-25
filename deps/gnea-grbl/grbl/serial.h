@@ -26,8 +26,9 @@
 extern "C" {
 #endif
 
-#include <drivers/uart.h>
+// #include <zephyr/drivers/ua>
 #include <stdint.h>
+#include <stdbool.h>
 
 #ifndef RX_BUFFER_SIZE
   #define RX_BUFFER_SIZE 1024

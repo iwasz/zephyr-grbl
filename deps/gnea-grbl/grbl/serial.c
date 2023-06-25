@@ -20,9 +20,9 @@
 */
 
 #include "grbl.h"
-#include <drivers/uart.h>
-#include <logging/log.h>
-#include <sys/ring_buffer.h>
+#include <zephyr/drivers/uart.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/sys/ring_buffer.h>
 
 LOG_MODULE_REGISTER(serial);
 
@@ -71,7 +71,8 @@ void serial_init() {
   // (&txRingBuf, sizeof (txRingBufferBlock), txRingBufferBlock);
 
   // This usart has to be initialized and set-up in src/mcu-peripherals.cc
-  uart = device_get_binding(DT_LABEL(DT_ALIAS(grbluart)));
+  // uart = device_get_binding(DT_PROP(DT_ALIAS(grbluart), label));
+  uart = DEVICE_DT_GET(DT_ALIAS(grbluart));
 
   // SD card functions check the uart variable to see if serial.c subsys. is
   // ready. So in this line they would see it is (if uart != NULL).

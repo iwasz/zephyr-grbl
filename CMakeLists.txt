@@ -4,7 +4,8 @@ list(APPEND ZEPHYR_EXTRA_MODULES
   ${CMAKE_CURRENT_SOURCE_DIR}/modules/hw_timer
 )
 
-cmake_minimum_required(VERSION 3.13.1)
+cmake_minimum_required(VERSION 3.22.2)
+set(BOARD_ROOT ${CMAKE_CURRENT_LIST_DIR})
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 include(${ZEPHYR_BASE}/cmake/cfb.cmake NO_POLICY_SCOPE)
 project(plotter)
@@ -19,7 +20,7 @@ include_directories (deps/libstate/src)
 
 add_definitions("-DDEFAULTS_ZEPHYR_GRBL_PLOTTER")
 
-target_sources(app PRIVATE 
+target_sources(app PRIVATE
     src/main.cc
     src/zephyrGrblPeripherals.cc
     src/stepperDriverSettings.cc
@@ -38,10 +39,10 @@ target_sources(app PRIVATE
     deps/TMC2130Stepper/src/source/TMC2130Stepper.cpp
 
     deps/gnea-grbl/grbl/coolant_control.c
-    deps/gnea-grbl/grbl/eeprom.c    
+    deps/gnea-grbl/grbl/eeprom.c
     deps/gnea-grbl/grbl/gcode.c
     deps/gnea-grbl/grbl/jog.c
-    deps/gnea-grbl/grbl/limits.c        
+    deps/gnea-grbl/grbl/limits.c
     deps/gnea-grbl/grbl/main.c
     deps/gnea-grbl/grbl/motion_control.c
     deps/gnea-grbl/grbl/nuts_bolts.c
@@ -49,7 +50,7 @@ target_sources(app PRIVATE
     deps/gnea-grbl/grbl/print.c
     deps/gnea-grbl/grbl/probe.c
     deps/gnea-grbl/grbl/protocol.c
-    deps/gnea-grbl/grbl/report.c   
+    deps/gnea-grbl/grbl/report.c
     deps/gnea-grbl/grbl/serial.c
     deps/gnea-grbl/grbl/settings.c
     deps/gnea-grbl/grbl/spindle_control.c

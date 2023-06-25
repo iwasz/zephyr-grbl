@@ -7,10 +7,10 @@
  ****************************************************************************/
 
 #include "sdCard.h"
-#include <disk/disk_access.h>
 #include <ff.h>
-#include <fs/fs.h>
-#include <logging/log.h>
+#include <zephyr/fs/fs.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/storage/disk_access.h>
 
 LOG_MODULE_REGISTER (sdCard);
 
@@ -79,7 +79,7 @@ void init ()
 /**
  *
  */
-int lsdir (gsl::czstring path)
+int lsdir (const char *path)
 {
         int res;
         struct fs_dir_t dirp;
