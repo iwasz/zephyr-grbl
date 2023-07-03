@@ -9,6 +9,9 @@
 #include "stepperDriverSettings.h"
 #include "zephyrGrblPeripherals.h"
 #include <TMC2130Stepper.h>
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER (tmc);
 
 namespace drv {
 
@@ -26,6 +29,8 @@ void init ()
         const int HOLDING_CURRENT = 1;
         const int MICRO_STEPS = 8; // TODO 256 µ steps?
         const bool I_SCALE_ANALOG = false;
+
+        LOG_INF ("GCONF %u", driver1.GCONF ());
 
         // TODO suboptimal. Following bunch of setting sould be stored using only 1 32bit SPI write to the CHOPCONF register.
         driver1.toff (3);
@@ -90,6 +95,9 @@ void init ()
         /*--------------------------------------------------------------------------*/
 
         driver1.TPWMTHRS (0);
+
+        LOG_INF ("GCONF %u", driver1.GCONF ());
+        LOG_INF ("IOIN %u", driver1.IOIN ());
 
         gpio_pin_set_dt (&enableX, true);
 

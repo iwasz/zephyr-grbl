@@ -1,31 +1,9 @@
 # Project goals
-* [x] Port GRBL to Zephyr and make it work with the UGS on my own hardware. 
+* [x] Port GRBL to Zephyr and make it work with the UGS on my own hardware.
 * [ ] Be able to draw complex shapes and as cleanly as [the original AxiDraw](https://www.youtube.com/watch?v=5492ZjivAQ0&t=27s).
 * [x] Emulate serial port over USB.
-* [ ] Display a menu and whatnot. Like on Prusa printer. 
+* [ ] Display a menu and whatnot. Like on Prusa printer.
 * [ ] Implement printing from a SD card.
-
-# Hardware
-* [ ] Make a cutout for 17HS4401's cable supporting protrusion. 
-* [ ] Make some marking showing where is the origin of the coordinate system. This is to show to the user where to place a sheet of paper.
-* Kareta
-  * [ ] Wytłoczenia na łożyska w karecie. Kiedy się ją skręci, łożyska się nie kręca kiedy się skręci mocno karetę.
-  * [ ] Problem z kablami. Albo wywalić switche, albo jakoś to poprawić.
-  * [ ] It's almost impossible to stick the belt into place. The slots are to tight!
-  * [ ] PCB for limit switches.
-  * [ ] Shielded cable for limit switches & Z (as suggested by grbl docs.)
-  * [ ] Low pass filter on limiter inputs (as suggested by grbl docs.)
-* Pen holder
-  * [x] Body3 łamie się jak się je wsadza. Grubsze od tyłu.
-  * [x] Sprężyna ma być montowana na pręcik 1.4 (drut ocynk).
-  * [x] Sprężyna musi mieć dłuższe "nóżki", bo się blokuje.
-  * [x] Montowanie sprężyny do servo. Jak?
-  * [x] Łożyska i pręty : to ciężko chodzi. Nie wiem czemu.
-  * [x] Montowanie servo : nie da się przełożyć kabla (częściowo próbowałem naprawić, ale nie jestem zadowolony).
-  * [x] Servo majta się na boki. Slot powinien być dopasowany.
-  * [x] Może zamiast wkrętów uzyć śrubek 2mm
-  * [ ] The spring broke off after 30 minutes of work time. Make it thicker, or **redesign**.
-  * [ ] Too much friction on the bearings which are of poor quality. Replace with slide bearnigs? Replace the rods? Redesign from ground up.
 
 # Software
 * [x] Default clock configuration (H7) results in 96MHz only, while the CPU is 600MHz capable I think. EDIT : Using F4 @ 168MHz
@@ -37,13 +15,13 @@
 * [x] `k_usleep (100)` results in 200µs delay. But 10ms works fine, so something with resolution.
 * [ ] Refactor (clean up) the hw_timer_driver. Change name to something more descriptive like timer_callback or sth.
 * [x] UGS hangs (I mean the transfer stalls) during second upload of the circle.ng file. Fix this. Provide seamless cooperation between the two.
-  * [x] GRBL hangs in a loop in deps/grbl/grbl/motion_control.c@61 . 
+  * [x] GRBL hangs in a loop in deps/grbl/grbl/motion_control.c@61 .
     * [x] Jog left, jog right, input the circle program line by line. At some point it'll hang.
     * [x] No jog at the beginning, only circle program line by line. Make a mistake along the way (input only a half of a line or something). Continue.
     * Note : when compiled with -O2 it once again works. WHY! It is NOT a stack overflow problem because I have the stack protection turned ON. EDIT : this was all by fault, I removed (I should say : I didn't port this portion from AVR to Zephyr) the IRQ critical section barriers in `system.c` `system_set_exec_state_flag()` (and in other functions there as well).
 * [ ] Resolve all the warnings.
-* [x] PWM setting in the timer ISR works slow. Why? 
-  * ~~Seems like `pwm_pin_set_usec` takes exactly 100µs to execute.~~ 
+* [x] PWM setting in the timer ISR works slow. Why?
+  * ~~Seems like `pwm_pin_set_usec` takes exactly 100µs to execute.~~
   * When run from the main thread `pwm_pin_set_usec` works in no time. ~~I'm starting to think, that my problems were due to misconfigured `DEFAULT_Z_MAX_RATE`. It was way to high, and the FW tried to update the Z axis to frequently.~~
   * **Something** is causing `pwm_pin_set_usec` to work very slowly when run from an ISR. Updating the TIM2->CCR1 directly works fine.
   * It was due to misconfiguration. Both servo PWM and the main timer callback were using the same timer and channel.
@@ -53,9 +31,9 @@
 * [ ] **Maybe**, just maybe refactor the TMC2130 code to a Zephyr driver.
 * [x] **Maybe** join the two GitHub projects (grbl and zephyr-grbl-plotter) into one. Easier for maintenance.
   * [x] Rollback formating done by my clang-format for easier diff'ing.
-* [x] Rollback my earlier changes that deleted the inversion implementation in GRBL. 
+* [x] Rollback my earlier changes that deleted the inversion implementation in GRBL.
 * [ ] Settings to NVM.
-  * [x] MCUboot has to be installed in order to flash partitions to work at all. 
+  * [x] MCUboot has to be installed in order to flash partitions to work at all.
 
   | name            | EEPROM addr | notes                                                                |
   | --------------- | ----------- | -------------------------------------------------------------------- |
@@ -70,15 +48,15 @@
   * [x] Homing blocks other threads. Try inserting k_yield somewhere.
   * [x] Homing moves opposite direction
   * [ ] After homing it sometimes move in the X direction.
-  * [ ] Homing / limit switches have too short of a travel. Fast moving axes don't have a chance to break on ~1mm distance. 
+  * [ ] Homing / limit switches have too short of a travel. Fast moving axes don't have a chance to break on ~1mm distance.
 * [x] Speeds in `default.h` are probably in wrong units. Default there equals to 10mm per minute. This should result in very slow movement, but in reality the device moves fast.
   * [x] Feed rate is not working at all as it seems? It is ignored in G commands.
   * [x] After resolving the problems with feed rate, when the feedrate sent to the plloter is too low (1-10) the ploter stops.
   * [ ] `settings.pulse_microseconds` is set, but it is not of any use, because there is no *output compare* callback set. It can't even be set right now.
   * [ ] The plotter is slightly slower than the desired feed rate (~25%).
   * [ ] When set to very low feed rate, the movement is jerky. For instance when feed rate is 1 mm/min the carret advances a fraction of a mm, and then stops, and repeats. Ticking sound can be heard.
-    * [x] Ahhh I spent a day on this. It seems that : 1. [TMC2130 works best with 24V instead of 12](https://forum.prusaprinters.org/forum/original-prusa-i3-mk3s-mk3-hardware-firmware-and-software-help/tmc2130-driver-infos-and-modifications/). When feed from 12V, the back EMF to input signal is to high (compared to 12V supply signal driving the coils), and TMC drivers get confused. 2. (more importantly) my motors are somehow unsuitable for the TMC2130. I don't understand this, but it has something to do with the current and coil resistance. 
-  
+    * [x] Ahhh I spent a day on this. It seems that : 1. [TMC2130 works best with 24V instead of 12](https://forum.prusaprinters.org/forum/original-prusa-i3-mk3s-mk3-hardware-firmware-and-software-help/tmc2130-driver-infos-and-modifications/). When feed from 12V, the back EMF to input signal is to high (compared to 12V supply signal driving the coils), and TMC drivers get confused. 2. (more importantly) my motors are somehow unsuitable for the TMC2130. I don't understand this, but it has something to do with the current and coil resistance.
+
       | Model           | rated current | coil resistance | steps | notes                         |
       | --------------- | ------------- | --------------- | ----- | ----------------------------- |
       | JK28HS32-0674   | 0.67A         | 6.2             | 200   | small one, smooth             |
@@ -107,3 +85,29 @@
 * [ ] Possibly implement (I mean anable in the MCUBoot) the DFU over USB.
 * [ ] Some recent changes caused that shell reacts on every second keypress only. It happened about when I worked on MCUBoot.
 * [ ]  The board does not seem to do POR. Haveto be manually reset.
+
+# Mechanical
+* [ ] Make a cutout for 17HS4401's cable supporting protrusion.
+* [ ] Make some marking showing where is the origin of the coordinate system. This is to show to the user where to place a sheet of paper.
+* Kareta
+  * [ ] Wytłoczenia na łożyska w karecie. Kiedy się ją skręci, łożyska się nie kręca kiedy się skręci mocno karetę.
+  * [ ] Problem z kablami. Albo wywalić switche, albo jakoś to poprawić.
+  * [ ] It's almost impossible to stick the belt into place. The slots are to tight!
+  * [ ] PCB for limit switches.
+  * [ ] Shielded cable for limit switches & Z (as suggested by grbl docs.)
+  * [ ] Low pass filter on limiter inputs (as suggested by grbl docs.)
+* Pen holder
+  * [x] Body3 łamie się jak się je wsadza. Grubsze od tyłu.
+  * [x] Sprężyna ma być montowana na pręcik 1.4 (drut ocynk).
+  * [x] Sprężyna musi mieć dłuższe "nóżki", bo się blokuje.
+  * [x] Montowanie sprężyny do servo. Jak?
+  * [x] Łożyska i pręty : to ciężko chodzi. Nie wiem czemu.
+  * [x] Montowanie servo : nie da się przełożyć kabla (częściowo próbowałem naprawić, ale nie jestem zadowolony).
+  * [x] Servo majta się na boki. Slot powinien być dopasowany.
+  * [x] Może zamiast wkrętów uzyć śrubek 2mm
+  * [ ] The spring broke off after 30 minutes of work time. Make it thicker, or **redesign**.
+  * [ ] Too much friction on the bearings which are of poor quality. Replace with slide bearnigs? Replace the rods? Redesign from ground up.
+
+# PCB
+* [ ] STD14 connector for stlinkv3.
+* [ ] OLED screen connector is (was?) flipped. Check & fix.

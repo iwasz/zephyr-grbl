@@ -67,7 +67,7 @@
 		};
 
 		nss {
-			gpios = <&gpioc 0 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpioc 0 GPIO_ACTIVE_LOW>;
 			label = "SPI chip select";
 		};
 	};
@@ -93,7 +93,7 @@
 		};
 
 		nss {
-			gpios = <&gpioc 1 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpioc 1 GPIO_ACTIVE_LOW>;
 			label = "SPI chip select for motor 2";
 		};
 	};
@@ -174,7 +174,7 @@
 		label = "SSD1306";
 		width = <128>;
 		height = <64>;
-		segment-offset = <0>;
+		segment-offset = <2>;
 		page-offset = <0>;
 		display-offset = <0>;
 		multiplex-ratio = <63>;

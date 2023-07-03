@@ -182,55 +182,55 @@ void mcuPeripheralsInit ()
                 return;
         }
 
-        ret = usb_enable (NULL);
+        // ret = usb_enable (NULL);
 
-        if (ret != 0) {
-                LOG_ERR ("Failed to enable USB");
-                return;
-        }
-
-        // ring_buf_init (&ringbuf, sizeof (ring_buffer), ring_buffer);
-
-        LOG_INF ("Wait for DTR");
-        uint32_t dtr = 0U;
-
-        // TODO This blocks until somebody connects. Why is it that way? What is it for?
-        while (true) {
-                uart_line_ctrl_get (dev, UART_LINE_CTRL_DTR, &dtr);
-
-                if (dtr) {
-                        break;
-                }
-
-                /* Give CPU resources to low priority threads. */
-                k_sleep (K_MSEC (100));
-        }
-
-        LOG_INF ("DTR set");
-
-        // /* They are optional, we use them to test the interrupt endpoint */
-        // ret = uart_line_ctrl_set (dev, UART_LINE_CTRL_DCD, 1);
-
-        // if (ret) {
-        //         LOG_WRN ("Failed to set DCD, ret code %d", ret);
+        // if (ret != 0) {
+        //         LOG_ERR ("Failed to enable USB");
+        //         return;
         // }
 
-        // ret = uart_line_ctrl_set (dev, UART_LINE_CTRL_DSR, 1);
+        // // ring_buf_init (&ringbuf, sizeof (ring_buffer), ring_buffer);
 
-        // if (ret) {
-        //         LOG_WRN ("Failed to set DSR, ret code %d", ret);
+        // LOG_INF ("Wait for DTR");
+        // uint32_t dtr = 0U;
+
+        // // TODO This blocks until somebody connects. Why is it that way? What is it for?
+        // while (true) {
+        //         uart_line_ctrl_get (dev, UART_LINE_CTRL_DTR, &dtr);
+
+        //         if (dtr) {
+        //                 break;
+        //         }
+
+        //         /* Give CPU resources to low priority threads. */
+        //         k_sleep (K_MSEC (100));
         // }
 
-        /* Wait 1 sec for the host to do all settings */
-        // k_busy_wait (1000000);
+        // LOG_INF ("DTR set");
 
-        uint32_t baudrate{};
-        ret = uart_line_ctrl_get (dev, UART_LINE_CTRL_BAUD_RATE, &baudrate);
+        // // /* They are optional, we use them to test the interrupt endpoint */
+        // // ret = uart_line_ctrl_set (dev, UART_LINE_CTRL_DCD, 1);
 
-        if (ret) {
-                LOG_WRN ("Failed to get baudrate, ret code %d", ret);
-        }
-        else {
-                LOG_INF ("Baudrate detected: %d", baudrate);
-        }
+        // // if (ret) {
+        // //         LOG_WRN ("Failed to set DCD, ret code %d", ret);
+        // // }
+
+        // // ret = uart_line_ctrl_set (dev, UART_LINE_CTRL_DSR, 1);
+
+        // // if (ret) {
+        // //         LOG_WRN ("Failed to set DSR, ret code %d", ret);
+        // // }
+
+        // /* Wait 1 sec for the host to do all settings */
+        // // k_busy_wait (1000000);
+
+        // uint32_t baudrate{};
+        // ret = uart_line_ctrl_get (dev, UART_LINE_CTRL_BAUD_RATE, &baudrate);
+
+        // if (ret) {
+        //         LOG_WRN ("Failed to get baudrate, ret code %d", ret);
+        // }
+        // else {
+        //         LOG_INF ("Baudrate detected: %d", baudrate);
+        // }
 }

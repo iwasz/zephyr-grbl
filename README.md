@@ -9,13 +9,14 @@ The project was written to power my [CoreXY pen plotter](https://hackaday.io/pro
 * [My notes](NOTES.md) on problems I've had.
 * [Hackaday.io project page](https://hackaday.io/project/177237-corexy-pen-plotter)
 
+
+
 # How to build
 Tested with Zephyr RTOS 2.6.99. Familiarize yourself with the [Zephyr RTOS build process](https://docs.zephyrproject.org/latest/getting_started/index.html) first. :
 
 
 ## With bootloader
-
-
+?
 
 ## Without bootloader (only for troubleshooting)
 That is when `CONFIG_BOOTLOADER_MCUBOOT=n` in the `prj.conf`.

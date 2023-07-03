@@ -1,4 +1,4 @@
-# Links 
+# Links
 * https://forum.prusaprinters.org/forum/original-prusa-i3-mk3s-mk3-hardware-firmware-and-software-help/tmc2130-driver-infos-and-modifications/
 
 # Unable to run the 'circle.ng' example
@@ -47,15 +47,15 @@ deps/gnea-grbl/grbl/serial.c
 deps/gnea-grbl/grbl/limits.c
 ```
 
-Blocking: 
+Blocking:
 * Obvious:
   * `limits_go_home` in *limits.c*. `k_yield` added.
-  * `protocol_main_loop`  in *protocol.c*. `k_yield` added in `protocol_execute_realtime` -> `protocol_exec_rt_system`. 
+  * `protocol_main_loop`  in *protocol.c*. `k_yield` added in `protocol_execute_realtime` -> `protocol_exec_rt_system`.
   * `protocol_buffer_synchronize`
   * `delay_sec`, but it allready has `k_sleep` inside.
   * `mc_probe_cycle` - few places. Not so importans as I haven't ported the probing stuff.
   * `mc_line` frequently called.
-  * `mc_line` -> limits_soft_check 
+  * `mc_line` -> limits_soft_check
   * limits_go_home
 
 
@@ -72,4 +72,13 @@ uartInterruptHandler
 
 
 ## My complaints about GRBL
-* Tremendous function complexity. For instance `gc_execute_line` has well over 1000 lines of code. 
+* Tremendous function complexity. For instance `gc_execute_line` has well over 1000 lines of code.
+
+
+# Manual tests
+* [x] Obviously check if SWD works.
+* [x] Serial console
+* [ ] USB - check if CDC ACM works
+* [ ] OLED
+* [ ] Steppers
+* [ ] Servo

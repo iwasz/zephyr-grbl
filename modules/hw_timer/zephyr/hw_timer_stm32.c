@@ -57,7 +57,7 @@ struct hw_timer_stm32_config {
 	uint32_t prescaler;
 	uint32_t countermode;
 	struct stm32_pclken pclken;
-	const struct pinctrl_dev_config *pcfg;
+	// const struct pinctrl_dev_config *pcfg;
 };
 
 /** Maximum number of timer channels : some stm32 soc have 6 else only 4 */
@@ -436,11 +436,11 @@ static int hw_timer_stm32_init(const struct device *dev)
 	}
 
 	/* configure pinmux */
-	r = pinctrl_apply_state(cfg->pcfg, PINCTRL_STATE_DEFAULT);
-	if (r < 0) {
-		LOG_ERR("HW_TIMER pinctrl setup failed (%d)", r);
-		return r;
-	}
+	// r = pinctrl_apply_state(cfg->pcfg, PINCTRL_STATE_DEFAULT);
+	// if (r < 0) {
+	// 	LOG_ERR("HW_TIMER pinctrl setup failed (%d)", r);
+	// 	return r;
+	// }
 
 	/* initialize timer */
 	LL_TIM_StructInit(&init);
@@ -480,14 +480,11 @@ static int hw_timer_stm32_init(const struct device *dev)
 	static struct hw_timer_stm32_data hw_timer_stm32_data_##index;                             \
 	IRQ_CONFIG_FUNC(index)                                                                     \
                                                                                                    \
-	PINCTRL_DT_INST_DEFINE(index);                                                             \
-                                                                                                   \
 	static const struct hw_timer_stm32_config hw_timer_stm32_config_##index = {                \
 		.timer = (TIM_TypeDef *)DT_REG_ADDR(DT_INST_PARENT(index)),                        \
 		.prescaler = DT_PROP(DT_INST_PARENT(index), st_prescaler),                         \
 		.countermode = DT_PROP(DT_INST_PARENT(index), st_countermode),                     \
 		.pclken = DT_INST_CLK(index, timer),                                               \
-		.pcfg = PINCTRL_DT_INST_DEV_CONFIG_GET(index),                                     \
 		CAPTURE_INIT(index)};                                                              \
                                                                                                    \
 	DEVICE_DT_INST_DEFINE(index, &hw_timer_stm32_init, NULL, &hw_timer_stm32_data_##index,     \
