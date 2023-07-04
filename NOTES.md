@@ -79,6 +79,7 @@ uartInterruptHandler
 * [x] Obviously check if SWD works.
 * [x] Serial console
 * [ ] USB - check if CDC ACM works
-* [ ] OLED
-* [ ] Steppers
+* [x] OLED - driver init delay fixes the problem. Use power domain?
+* [x] Steppers
 * [ ] Servo
+* [ ] NVS

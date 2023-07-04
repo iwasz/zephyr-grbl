@@ -17,10 +17,25 @@
 #include <zephyr/devicetree.h>
 #include <zephyr/display/cfb.h>
 #include <zephyr/drivers/gpio.h>
+#include <zephyr/init.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
 LOG_MODULE_REGISTER (display);
+
+int sysInit ()
+{
+        /*
+         * This is a hack to delay OLED screen initialization. Assumption is that CONFIG_DISPLAY_INIT_PRIORITY is
+         * higher than 0. This works by adding a function with the same init level as the ssd1306 driver (POST_KERNEL)
+         * but with lower priority number which makes it run prior the oled driver initialization. Suggestions as to
+         * how to do it better are welcomed.
+         */
+        k_sleep (K_MSEC (50));
+        return 0;
+}
+
+SYS_INIT (sysInit, POST_KERNEL, 0);
 
 namespace {
 void displayThread (void *, void *, void *);

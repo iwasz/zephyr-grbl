@@ -31,7 +31,6 @@ void testStepperMotors ();
 int main ()
 {
         try {
-                // disp::init ();
                 sd::init ();
                 mcuPeripheralsInit ();
                 drv::init ();
@@ -44,8 +43,8 @@ int main ()
                 //         k_sleep (K_SECONDS (1));
                 // }
 
-                // grblMain ();
-                testStepperMotors ();
+                grblMain ();
+                // testStepperMotors ();
         }
         catch (exc::Exception const &e) {
                 printk ("exc::Exception: %s\n", e.msg ().c_str ());
